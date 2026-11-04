@@ -1,13 +1,13 @@
 /**
  * Rapports d'intervention : l'agent sur place remplit sur son téléphone le constat, la cause,
  * les éléments contrôlés (état + observation), les travaux faits, la recommandation et jusqu'à
- * 6 photos. Le PDF client suit le papier en-tête officiel (maquette 2b validée le 04/11/2026).
+ * 2 photos. Le PDF client suit le papier en-tête officiel (maquette 2b validée le 04/11/2026).
  */
 
 const DOMAINES_RAPPORT = ['Climatisation', 'Électricité', 'Groupe électrogène', 'Sécurité électronique', 'Contrôle d\'accès', 'Réseau / fibre', 'Plomberie', 'Autre'];
 const ETATS_CONTROLE = ['OK', 'À surveiller', 'HS'];
 const NOM_DOSSIER_PHOTOS_RAPPORTS = 'Maison Symbiose - Photos rapports';
-const PHOTOS_MAX_RAPPORT = 6;
+const PHOTOS_MAX_RAPPORT = 2;
 
 /**
  * Crée un rapport sur une affaire. details : {domaine, localisation, constat, cause, travaux,
@@ -89,7 +89,7 @@ function htmlRapportClient(numeroRapport) {
       : '')
     + rubrique('TRAVAUX RÉALISÉS', r.TravauxRealises)
     + (photos.length
-      ? '<table style="width:100%;margin-top:10px"><tr>' + photos.map((src, i) => (i && i % 3 === 0 ? '</tr><tr>' : '') + '<td style="width:33%;padding:3px;text-align:center;vertical-align:middle"><img src="' + src + '" style="max-width:100%;max-height:170px"></td>').join('') + '</tr></table>'
+      ? '<table style="width:100%;margin-top:10px"><tr>' + photos.map((src, i) => '<td style="width:50%;padding:3px;text-align:center;vertical-align:middle"><img src="' + src + '" style="max-width:100%;max-height:240px"></td>').join('') + '</tr></table>'
       : '')
     + rubrique('RECOMMANDATION', r.Recommandation)
     + '<table style="width:100%;margin-top:14px"><tr><td></td><td style="width:200px;text-align:center"><img src="' + IMAGES_ENTETE.signature + '" style="width:150px"></td></tr></table>';

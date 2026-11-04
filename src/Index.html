@@ -367,7 +367,7 @@ ECRANS.rapport = function (p) {
     + '<button type="button" class="bouton second" onclick="ajouterControle()">+ Ajouter un élément</button></div>'
     + '<div class="carte" style="gap:14px">'
     + '<div class="champ"><label for="rtra">Travaux réalisés</label><textarea id="rtra"></textarea></div>'
-    + '<div class="champ"><label>Photos (6 au plus)</label><div id="rphotos" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>'
+    + '<div class="champ"><label>Photos (2 au plus)</label><div id="rphotos" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>'
     + '<div class="photo" style="height:90px">' + svg('photo', 28, 'currentColor', 1.8) + '<b>Ajouter des photos</b><input type="file" accept="image/*" multiple aria-label="Ajouter des photos" onchange="ajouterPhotosRapport(this)"></div></div>'
     + '<div class="champ"><label for="rrec">Recommandation</label><textarea id="rrec"></textarea></div>'
     + '<button class="bouton" type="submit" id="renv">Enregistrer le rapport</button></div></form>', 'affaires');
@@ -399,8 +399,8 @@ function reduireImage(fichier, max, qualite) {
   });
 }
 function ajouterPhotosRapport(input) {
-  const fichiers = Array.from(input.files || []).slice(0, 6 - etat.photosRapport.length);
-  if (input.files.length > fichiers.length) toast('6 photos au plus');
+  const fichiers = Array.from(input.files || []).slice(0, 2 - etat.photosRapport.length);
+  if (input.files.length > fichiers.length) toast('2 photos au plus');
   Promise.all(fichiers.map((f) => reduireImage(f, 1024, 0.75))).then((urls) => {
     etat.photosRapport = etat.photosRapport.concat(urls); input.value = ''; afficherPhotosRapport();
   }).catch(() => toast('Photo illisible'));
