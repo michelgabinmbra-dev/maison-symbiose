@@ -90,7 +90,7 @@ function htmlProformaClient(numeroDevis) {
       + '<td style="' + cellule + ';text-align:right">' + fmt(Number(l.Quantite) * Number(l.PrixUnitaire)) + '</td></tr>').join('')
     + '<tr style="font-weight:bold;font-size:12px"><td colspan="4" style="' + cellule + ';border-top:1.5px solid #1F2937;text-align:center">TOTAL</td><td style="' + cellule + ';border-top:1.5px solid #1F2937;text-align:right">' + fmt(total) + '</td></tr></table>'
     + '<p style="margin-top:14px">Arrêtée la présente facture proforma à la somme de <b>' + nombreEnLettres(total) + ' (' + fmt(total) + ') francs CFA</b>.</p>'
-    + '<table style="width:100%;margin-top:18px"><tr><td></td><td style="width:200px;text-align:center"><b>Le Directeur</b><br><br><br><br>Cachet et signature</td></tr></table>';
+    + '<table style="width:100%;margin-top:18px"><tr><td></td><td style="width:200px;text-align:center"><img src="' + IMAGES_ENTETE.signature + '" style="width:170px"></td></tr></table>';
 
   return cadreDocument('FACTURE PROFORMA', numeroDocumentProforma(numeroDevis, affaire.Client), contenu);
 }
