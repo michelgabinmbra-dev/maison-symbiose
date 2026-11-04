@@ -24,8 +24,8 @@ function echapperHtml(t) {
 }
 
 /** Habille un contenu avec le papier en-tête officiel (bandeau métiers, encadré fiscal, pied légal). */
-function cadreDocument(titre, numero, contenu) {
-  const date = Utilities.formatDate(new Date(), 'Africa/Abidjan', 'dd/MM/yyyy');
+function cadreDocument(titre, numero, contenu, dateDocument) {
+  const date = Utilities.formatDate(dateDocument instanceof Date ? dateDocument : new Date(), 'Africa/Abidjan', 'dd/MM/yyyy');
   return '<!doctype html><html><head><meta charset="utf-8"><style>table{font-size:inherit;color:inherit}</style></head><body style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#1F2937">'
     + '<table style="width:100%;border-collapse:collapse;background:#0E7A93" cellpadding="0"><tr>'
     + '<td style="width:190px;padding:8px 10px;background:#0E7A93"><div style="background:#fff;border-radius:6px;padding:4px"><img src="' + IMAGES_ENTETE.logo + '" style="width:170px"></div></td>'
@@ -69,27 +69,51 @@ function numeroDocumentProforma(numeroDevis, client) {
   }
 }
 
-function htmlProformaClient(numeroDevis) {
-  const resultat = trouverDevis(numeroDevis);
-  const devis = ligneVersObjet(resultat.entetes, resultat.ligne);
-  const ra = trouverAffaire(devis.NumeroAffaire);
-  const affaire = ligneVersObjet(ra.entetes, ra.ligne);
-  const lignes = lireLignes(NOMS_FEUILLES.LIGNES_DEVIS).filter((l) => l.NumeroDevis === numeroDevis);
-  const fmt = (n) => Math.round(Number(n)).toLocaleString('fr-FR').replace(/ | /g, ' ');
-  const total = lignes.reduce((s, l) => s + Number(l.Quantite) * Number(l.PrixUnitaire), 0);
-  const cellule = 'border:1px solid #9CA3AF;padding:6px';
+function formaterMontant(n) {
+  return Math.round(Number(n)).toLocaleString('fr-FR').replace(/ | /g, ' ');
+}
 
-  const contenu = '<table style="width:100%;margin:14px 0"><tr>'
-    + '<td style="vertical-align:top;width:55%"><b style="color:#0E5C8C;text-decoration:underline;font-size:10px">OBJET</b><br><b>' + echapperHtml(String(affaire.Titre || affaire.TypeIntervention).toUpperCase()) + '</b></td>'
-    + '<td style="border:1.5px solid #1F2937;text-align:center;padding:8px"><b style="font-size:13px">' + echapperHtml(String(affaire.Client).toUpperCase()) + '</b>' + (affaire.Site ? '<br>' + echapperHtml(affaire.Site) : '') + '</td></tr></table>'
+function totalLignes(lignes) {
+  return lignes.reduce((s, l) => s + Number(l.Quantite) * Number(l.PrixUnitaire), 0);
+}
+
+/** Tableau N° / Désignation / Qté / P.U. / Montant + TOTAL, commun à la proforma et à la facture. */
+function tableauLignesClient(lignes) {
+  const fmt = formaterMontant;
+  const total = totalLignes(lignes);
+  const cellule = 'border:1px solid #9CA3AF;padding:6px';
+  return ''
     + '<table style="width:100%;border-collapse:collapse"><tr style="background:#A9CDEB;font-weight:bold">'
     + '<td style="' + cellule + ';width:28px">N°</td><td style="' + cellule + ';text-align:center">Désignation</td><td style="' + cellule + ';text-align:center;width:40px">Qté</td>'
     + '<td style="' + cellule + ';text-align:right;width:90px">P.U. (XOF)</td><td style="' + cellule + ';text-align:right;width:100px">Montant (XOF)</td></tr>'
     + lignes.map((l) => '<tr><td style="' + cellule + '">' + l.NumeroLigne + '</td><td style="' + cellule + '">' + echapperHtml(l.Designation) + '</td>'
       + '<td style="' + cellule + ';text-align:center">' + l.Quantite + '</td><td style="' + cellule + ';text-align:right">' + fmt(l.PrixUnitaire) + '</td>'
       + '<td style="' + cellule + ';text-align:right">' + fmt(Number(l.Quantite) * Number(l.PrixUnitaire)) + '</td></tr>').join('')
-    + '<tr style="font-weight:bold;font-size:12px"><td colspan="4" style="' + cellule + ';border-top:1.5px solid #1F2937;text-align:center">TOTAL</td><td style="' + cellule + ';border-top:1.5px solid #1F2937;text-align:right">' + fmt(total) + '</td></tr></table>'
-    + '<p style="margin-top:14px">Arrêtée la présente facture proforma à la somme de <b>' + nombreEnLettres(total) + ' (' + fmt(total) + ') francs CFA</b>.</p>'
+    + '<tr style="font-weight:bold;font-size:12px"><td colspan="4" style="' + cellule + ';border-top:1.5px solid #1F2937;text-align:center">TOTAL</td><td style="' + cellule + ';border-top:1.5px solid #1F2937;text-align:right">' + fmt(total) + '</td></tr></table>';
+}
+
+function arreteeALaSomme(nature, total) {
+  return '<p style="margin-top:14px">Arrêtée la présente ' + nature + ' à la somme de <b>' + nombreEnLettres(total) + ' (' + formaterMontant(total) + ') francs CFA</b>.</p>';
+}
+
+/** Encadré OBJET + client/site en tête de la proforma et de la facture. */
+function blocObjetClient(affaire) {
+  return '<table style="width:100%;margin:14px 0"><tr>'
+    + '<td style="vertical-align:top;width:55%"><b style="color:#0E5C8C;text-decoration:underline;font-size:10px">OBJET</b><br><b>' + echapperHtml(String(affaire.Titre || affaire.TypeIntervention).toUpperCase()) + '</b></td>'
+    + '<td style="border:1.5px solid #1F2937;text-align:center;padding:8px"><b style="font-size:13px">' + echapperHtml(String(affaire.Client).toUpperCase()) + '</b>' + (affaire.Site ? '<br>' + echapperHtml(affaire.Site) : '') + '</td></tr></table>';
+}
+
+function htmlProformaClient(numeroDevis) {
+  const resultat = trouverDevis(numeroDevis);
+  const devis = ligneVersObjet(resultat.entetes, resultat.ligne);
+  const ra = trouverAffaire(devis.NumeroAffaire);
+  const affaire = ligneVersObjet(ra.entetes, ra.ligne);
+  const lignes = lireLignes(NOMS_FEUILLES.LIGNES_DEVIS).filter((l) => l.NumeroDevis === numeroDevis);
+  const total = totalLignes(lignes);
+
+  const contenu = blocObjetClient(affaire)
+    + tableauLignesClient(lignes)
+    + arreteeALaSomme('facture proforma', total)
     + '<table style="width:100%;margin-top:18px"><tr><td></td><td style="width:200px;text-align:center"><img src="' + IMAGES_ENTETE.signature + '" style="width:170px"></td></tr></table>';
 
   return cadreDocument('FACTURE PROFORMA', numeroDocumentProforma(numeroDevis, affaire.Client), contenu);

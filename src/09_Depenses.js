@@ -133,9 +133,7 @@ function calculerBilan(numerosAffaires) {
     impots += montantMarche * tauxImpot / 100;
   });
 
-  const encaisse = factures
-    .filter((f) => f.StatutPaiement === 'Payée')
-    .reduce((somme, f) => somme + (Number(f.Montant) || 0), 0);
+  const encaisse = factures.reduce((somme, f) => somme + (Number(f.MontantEncaisse) || 0), 0);
 
   const montantTotal = recettes + recettesPrevues;
   const beneficeNet = montantTotal - totalDepenses - commissions - impots;

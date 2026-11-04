@@ -312,6 +312,7 @@ ECRANS.affaire = function (p) {
       html += '<button class="item" onclick="aller(\'proforma\',{numero:\'' + esc(a.NumeroAffaire) + '\'})"><span class="ico violet">' + svg('liste', 22, '#fff') + '</span><span class="txt"><b>Proforma</b><small>'
         + (d.devis ? esc(d.devis.NumeroDevis) + ' · ' + fcfa(d.devis.PrixPropose) + ' · marge réelle ' + esc(d.devis.MargeReelle) + ' %' : 'À créer')
         + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>';
+    html += carteFacture(d);
     }
     const totalDep = d.depenses.reduce((s, x) => s + Number(x.Montant), 0);
     html += '<div class="carte"><div class="ligne"><b>Dépenses du marché</b><b>' + fcfa(totalDep) + '</b></div>'
@@ -421,6 +422,54 @@ function enregistrerRapport(ev) {
   $('renv').disabled = true; $('renv').textContent = 'Envoi en cours…';
   appel('creerRapport', { numero: numeroCourant(), rapport }).then((n) => { toast('Rapport ' + n + ' enregistré'); revenir(); })
     .catch((e) => { $('renv').disabled = false; $('renv').textContent = 'Enregistrer le rapport'; echec(e); });
+}
+
+// ---------- Facture et paiements ----------
+function carteFacture(d) {
+  const f = d.facture, titre = '<b style="font-size:13px;color:#5A6585">FACTURE ET PAIEMENT</b>';
+  if (!f) {
+    if (!d.devis || d.devis.Statut !== 'Validé') return '<div class="carte">' + titre + '<small style="color:#5A6585">La facture se fait une fois la proforma validée.</small></div>';
+    return '<form class="carte" onsubmit="emettreFactureUI(event)">' + titre
+      + '<div class="champ"><label for="fbc">N° du bon de commande du client</label><input id="fbc" placeholder="Facultatif"></div>'
+      + '<div class="champ"><label for="fdl">Délai de paiement (jours)</label><input id="fdl" type="number" inputmode="numeric" value="15"></div>'
+      + '<button class="bouton" type="submit">Émettre la facture · ' + fcfa(d.devis.PrixPropose) + '</button></form>';
+  }
+  const retard = f.joursDeRetard > 0, paye = f.StatutPaiement === 'Payée';
+  const enc = Number(f.MontantEncaisse) || 0, pct = Math.min(100, Math.round(enc / (Number(f.Montant) || 1) * 100));
+  return '<div class="carte"><div class="ligne">' + titre + '<span class="pastille ' + (paye ? 'p-ok' : retard ? 'p-alerte' : 'p-moyenne') + '">' + (paye ? 'Payée' : retard ? f.joursDeRetard + ' j de retard' : esc(f.StatutPaiement)) + '</span></div>'
+    + '<div style="font-size:14px"><b>' + esc(f.NumeroDocument || f.NumeroFacture) + '</b>' + (f.BonCommande ? ' · BC ' + esc(f.BonCommande) : '') + '</div>'
+    + '<div class="kv"><span>Montant</span><span>' + fcfa(f.Montant) + '</span></div>'
+    + '<div class="kv"><span>Encaissé</span><span>' + fcfa(enc) + '</span></div>'
+    + '<div style="height:8px;border-radius:99px;background:#E6E9F2;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#10B981,#059669)"></div></div>'
+    + (paye ? '' : '<div class="kv" style="font-weight:700"><span>Reste à payer</span><span>' + fcfa(f.reste) + '</span></div>'
+      + '<div class="kv"><span>Échéance</span><span>' + (f.echeance ? new Date(f.echeance).toLocaleDateString('fr-FR') : '') + (f.DateReception ? '' : ' (dépôt non saisi)') + '</span></div>')
+    + (f.paiements.length ? f.paiements.map((x) => '<div class="kv"><span>' + dateCourte(x.Date) + ' · ' + esc(x.Mode) + (x.Reference ? ' · ' + esc(x.Reference) : '') + '</span><span>' + fcfa(x.Montant) + '</span></div>').join('') : '')
+    + '<div class="puces"><button class="puce" onclick="pdfFactureUI()">PDF</button>' + (estChef() ? '<button class="puce" onclick="envoyerFactureUI()">Envoyer au client</button>' : '')
+    + (!f.DateReception && !paye ? '<button class="puce" onclick="deposerFactureUI()">Déposée chez le client</button>' : '') + '</div>'
+    + (paye ? '' : '<details><summary style="font-weight:600;color:#2563EB;min-height:44px;display:flex;align-items:center">+ Saisir un paiement reçu</summary>'
+      + '<form onsubmit="paiementUI(event)" style="display:flex;flex-direction:column;gap:10px">'
+      + '<input id="pm" type="number" inputmode="numeric" value="' + Math.round(f.reste) + '" aria-label="Montant reçu" required>'
+      + '<div class="puces" id="pmode">' + d.modesPaiement.map((m, i) => '<button type="button" class="puce ' + (i ? '' : 'on') + '" onclick="choisir(\'pmode\',this)">' + esc(m) + '</button>').join('') + '</div>'
+      + '<input id="pref" placeholder="Référence (n° de virement, de chèque…)" aria-label="Référence">'
+      + '<input id="pdt" type="date" value="' + new Date().toISOString().slice(0, 10) + '" aria-label="Date du paiement">'
+      + '<button class="bouton" type="submit">Enregistrer le paiement</button></form></details>')
+    + '</div>';
+}
+function factureCourante() { return etat.affaire.facture.NumeroFacture; }
+function emettreFactureUI(ev) {
+  ev.preventDefault();
+  appel('emettreFacture', { numero: numeroCourant(), bonCommande: $('fbc').value.trim(), delaiJours: $('fdl').value }).then((n) => { toast('Facture ' + n + ' émise'); rafraichirAffaire(); }).catch(echec);
+}
+function pdfFactureUI() { appel('pdfFacture', { facture: factureCourante() }).then((url) => window.open(url, '_blank')).catch(echec); }
+function envoyerFactureUI() {
+  if (!confirm('Envoyer la facture au client ?')) return;
+  appel('envoyerFacture', { facture: factureCourante() }).then((a) => toast('Facture envoyée à ' + a)).catch(echec);
+}
+function deposerFactureUI() { appel('deposerFacture', { facture: factureCourante() }).then(() => { toast('Dépôt enregistré, le délai court'); rafraichirAffaire(); }).catch(echec); }
+function paiementUI(ev) {
+  ev.preventDefault();
+  appel('enregistrerPaiement', { facture: factureCourante(), montant: $('pm').value, mode: choix('pmode'), reference: $('pref').value.trim(), date: $('pdt').value })
+    .then((r) => { toast(r.reste > 0 ? 'Paiement enregistré, reste ' + fcfa(r.reste) : 'Facture soldée'); rafraichirAffaire(); }).catch(echec);
 }
 
 // ---------- Nouvelle demande ----------
@@ -622,6 +671,9 @@ ECRANS.argent = function (p) {
       + [['mois', 'Ce mois'], ['trimestre', 'Trimestre'], ['annee', 'Année']].map((x) => '<button class="puce ' + (x[0] === nom ? 'on' : '') + '" onclick="aller(\'argent\',{periode:\'' + x[0] + '\'},true)">' + x[1] + '</button>').join('') + '</div></div>'
       + '<div class="feuille"><div class="resultat"><b style="font-size:13px;color:#DDE3FF">BÉNÉFICE NET DE L\'ENTREPRISE</b><div class="gros">' + fcfa(t.beneficeNetEntreprise) + '</div>'
       + '<div class="kv"><span>Facturé</span><span>' + fcfa(t.facture) + '</span></div><div class="kv"><span>Encaissé</span><span>' + fcfa(t.encaisse) + '</span></div><div class="kv"><span>Dépenses</span><span>' + fcfa(t.depenses) + '</span></div></div>'
+      + '<h2>À encaisser</h2>'
+      + (d.aEncaisser.length ? d.aEncaisser.map((f) => '<button class="item" onclick="aller(\'affaire\',{numero:\'' + esc(f.affaire) + '\'})"><span class="ico ' + (f.joursDeRetard > 0 ? 'rouge' : 'bleu') + '">' + svg('liste', 22, '#fff') + '</span><span class="txt"><b>' + esc(f.client) + ' · ' + fcfa(f.reste) + '</b><small>' + esc(f.document || f.numero) + ' · ' + esc(f.titre) + '</small></span>'
+        + '<span class="pastille ' + (f.joursDeRetard > 0 ? 'p-alerte' : 'p-moyenne') + '">' + (f.joursDeRetard > 0 ? f.joursDeRetard + ' j retard' : (f.echeance ? 'le ' + dateCourte(f.echeance) : '')) + '</span></button>').join('') : '<div class="vide">Aucune facture en attente.</div>')
       + '<h2>Par client</h2>'
       + (d.parClient.length ? d.parClient.map((b) => '<div class="item"><span class="ico ' + ((b.margeNettePourcent || 0) < 25 ? 'rouge' : 'vert') + '">' + svg('courbe', 22, '#fff') + '</span><span class="txt"><b>' + esc(b.client) + '</b><small>' + b.affaires.length + ' affaire(s) · dépenses ' + fcfa(b.totalDepenses) + '</small></span>'
         + '<span class="pastille ' + ((b.margeNettePourcent || 0) < 25 ? 'p-alerte' : 'p-ok') + '">' + (b.margeNettePourcent != null ? b.margeNettePourcent + ' %' : '–') + '</span></div>').join('') : '<div class="vide">Aucune affaire sur la période.</div>')

@@ -21,6 +21,7 @@ const NOMS_FEUILLES = {
   LIGNES_DEVIS: 'Lignes_Devis',
   RAPPORTS: 'Rapports',
   FACTURES: 'Factures',
+  PAIEMENTS: 'Paiements',
   DEPENSES: 'Depenses',
   VEHICULES: 'Vehicules',
   MOUVEMENTS_VEHICULE: 'Mouvements_Vehicule',

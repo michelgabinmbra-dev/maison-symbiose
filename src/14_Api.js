@@ -41,6 +41,12 @@ const ACTIONS_API = {
   creerRapport: (a) => creerRapport(a.numero, a.rapport),
   pdfRapport: (a) => pdfRapport(a.rapport),
   envoyerRapport: (a) => envoyerRapport(a.rapport),
+  // Facture et paiements
+  emettreFacture: (a) => emettreFacture(a.numero, { bonCommande: a.bonCommande, delaiJours: a.delaiJours }),
+  deposerFacture: (a) => deposerFacture(a.facture, a.date),
+  enregistrerPaiement: (a) => enregistrerPaiement(a.facture, a.montant, a.mode, a.reference, a.date),
+  pdfFacture: (a) => pdfFacture(a.facture),
+  envoyerFacture: (a) => envoyerFacture(a.facture),
   // Véhicules, matériel
   prendreVehicule: (a) => prendreVehicule(a.immatriculation, '', Number(a.kilometrage), a.photo),
   deposerVehicule: (a) => deposerVehicule(a.immatriculation, '', Number(a.kilometrage), a.ville, a.photo),
@@ -77,10 +83,8 @@ function ecranAccueil() {
   const utilisateur = exigerRole(Object.values(ROLES));
   const affaires = lireLignes(NOMS_FEUILLES.AFFAIRES);
   const ouvertes = affaires.filter((a) => STATUTS_CLOS.indexOf(a.Statut) === -1);
-  const maintenant = Date.now();
-  const facturesEnRetard = lireLignes(NOMS_FEUILLES.FACTURES).filter((f) => f.StatutPaiement !== 'Payée'
-    && f.DateEmission instanceof Date
-    && maintenant - f.DateEmission.getTime() > (Number(f.DelaiPaiementJours) || DELAI_PAIEMENT_JOURS_DEFAUT) * 864e5);
+  const facturesEnRetard = lireLignes(NOMS_FEUILLES.FACTURES)
+    .filter((f) => f.StatutPaiement !== STATUTS_PAIEMENT.PAYEE && situationFacture(f).joursDeRetard > 0);
 
   return {
     utilisateur,
@@ -130,10 +134,18 @@ function ecranAffaire(numero) {
     voitFinances,
     statuts: Object.values(STATUTS_AFFAIRE),
     categories: Object.values(CATEGORIES_DEPENSE),
+    facture: voitFinances ? ficheFacture(numero) : null,
+    modesPaiement: MODES_PAIEMENT,
     rapports: rapportsDeLAffaire(numero),
     domaines: DOMAINES_RAPPORT,
     etatsControle: ETATS_CONTROLE,
   };
+}
+
+function ficheFacture(numeroAffaire) {
+  const f = factureDeLAffaire(numeroAffaire);
+  if (!f) return null;
+  return Object.assign({}, f, situationFacture(f), { paiements: paiementsDeLaFacture(f.NumeroFacture) });
 }
 
 function changerStatutParChef(numero, statut) {
@@ -196,6 +208,7 @@ function ecranArgent(debut, fin) {
   const depenses = depensesEntreprise(debut, fin);
   return {
     parClient, depenses,
+    aEncaisser: facturesAEncaisser(),
     total: Object.assign(total, {
       depenses: depenses.total,
       beneficeNetEntreprise: total.benefice - (depenses.parAffaire['Hors marché'] || 0),

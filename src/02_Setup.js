@@ -47,7 +47,11 @@ function initialiserBaseDeDonnees() {
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.FACTURES, [
     'NumeroFacture', 'NumeroAffaire', 'Montant', 'DateEmission', 'DelaiPaiementJours',
-    'StatutPaiement', 'DateReception', 'DatePaiement',
+    'StatutPaiement', 'DateReception', 'DatePaiement', 'NumeroDevis', 'NumeroDocument', 'BonCommande',
+    'MontantEncaisse', 'EmisePar',
+  ]);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.PAIEMENTS, [
+    'NumeroPaiement', 'NumeroFacture', 'NumeroAffaire', 'Date', 'Montant', 'Mode', 'Reference', 'SaisiPar',
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.DEPENSES, [
     'NumeroDepense', 'NumeroAffaire', 'Categorie', 'Montant', 'Date', 'Description', 'CreePar',
