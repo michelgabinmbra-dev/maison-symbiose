@@ -1,15 +1,14 @@
 /**
  * Logistique : outillage (prêté puis rendu) et matériel (consommé sur un marché).
- * Tout le monde peut prendre/rendre ; Jean (rôle STOCK) confirme les retours et reçoit les
- * alertes (outil non rendu, écart sur le matériel). Les alertes matériel vont aussi à la
- * comptabilité. Le matériel posé devient automatiquement une dépense du marché.
+ * Tout le monde peut prendre/rendre. Jean (rôle STOCK) n'est pas sur place : il ne confirme
+ * rien, il reçoit chaque matin la liste des outils non rendus avec qui les a pris et depuis
+ * quand, et les écarts sur le matériel (aussi envoyés à la comptabilité). Le matériel posé devient automatiquement une dépense du marché.
  * Mise en route (une fois, depuis l'éditeur) : exécuter installerDeclencheurOutils().
  */
 
 const STATUTS_OUTIL = {
   DISPONIBLE: 'Disponible',
   SORTI: 'Sorti',
-  RENDU_A_CONFIRMER: 'Rendu, à confirmer',
 };
 
 const ACTIONS_OUTIL = {
@@ -48,48 +47,47 @@ function prendreOutil(outil, lieuDeclare) {
   ]);
 }
 
-/** "Je rends" : l'outil attend la confirmation de Jean. */
+/** "Je rends" : l'outil redevient disponible. */
 function rendreOutil(outil, lieuDeclare) {
   const utilisateur = exigerRole(Object.values(ROLES));
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.STOCK_OUTILLAGE);
   const resultat = trouverOutil(outil);
-  majCellule(feuille, resultat, 'Statut', STATUTS_OUTIL.RENDU_A_CONFIRMER);
+  majCellule(feuille, resultat, 'Statut', STATUTS_OUTIL.DISPONIBLE);
   majCellule(feuille, resultat, 'Lieu', lieuDeclare || '');
   majCellule(feuille, resultat, 'DerniereMaj', new Date());
   getFeuilleDonnees(NOMS_FEUILLES.MOUVEMENTS_OUTILLAGE).appendRow([
-    outil, utilisateur.nom, ACTIONS_OUTIL.RETOUR, new Date(), lieuDeclare || '', false,
+    outil, utilisateur.nom, ACTIONS_OUTIL.RETOUR, new Date(), lieuDeclare || '', '',
   ]);
 }
 
-/** Jean confirme qu'il a bien récupéré l'outil. */
-function confirmerRetourOutil(outil) {
-  exigerRole(ROLES_GESTION_STOCK);
-  const feuilleStock = getFeuilleDonnees(NOMS_FEUILLES.STOCK_OUTILLAGE);
-  const resultat = trouverOutil(outil);
-  majCellule(feuilleStock, resultat, 'Statut', STATUTS_OUTIL.DISPONIBLE);
-  majCellule(feuilleStock, resultat, 'DerniereMaj', new Date());
-
-  const feuilleMouvements = getFeuilleDonnees(NOMS_FEUILLES.MOUVEMENTS_OUTILLAGE);
-  const valeurs = feuilleMouvements.getDataRange().getValues();
-  const entetes = valeurs[0];
-  for (let i = valeurs.length - 1; i >= 1; i--) {
-    if (valeurs[i][entetes.indexOf('Outil')] === outil && valeurs[i][entetes.indexOf('Action')] === ACTIONS_OUTIL.RETOUR) {
-      majCellule(feuilleMouvements, { index: i + 1, ligne: valeurs[i], entetes }, 'ConfirmeParJean', true);
-      break;
-    }
-  }
+/** Outils sortis depuis plus de DELAI_ALERTE_RETOUR_OUTIL_JOURS, avec qui les a pris et depuis quand. */
+function listerOutilsNonRendus() {
+  const limite = new Date(Date.now() - DELAI_ALERTE_RETOUR_OUTIL_JOURS * 24 * 3600 * 1000);
+  const prises = lireLignes(NOMS_FEUILLES.MOUVEMENTS_OUTILLAGE).filter((m) => m.Action === ACTIONS_OUTIL.PRISE);
+  return lireLignes(NOMS_FEUILLES.STOCK_OUTILLAGE)
+    .filter((o) => o.Statut === STATUTS_OUTIL.SORTI && o.DerniereMaj < limite)
+    .map((o) => {
+      const derniere = prises.filter((m) => m.Outil === o.Outil).sort((a, b) => b.Date - a.Date)[0];
+      return {
+        outil: o.Outil,
+        prisPar: derniere ? derniere.Agent : 'inconnu',
+        depuis: o.DerniereMaj,
+        joursDeRetard: Math.floor((Date.now() - o.DerniereMaj) / (24 * 3600 * 1000)),
+        lieuDeclare: o.Lieu || 'non précisé',
+      };
+    });
 }
 
-/** Tourne chaque jour : alerte Jean pour chaque outil sorti depuis trop longtemps. */
+/** Tourne chaque matin : envoie à Jean la liste des outils non rendus et de qui les a pris. */
 function verifierOutilsNonRendus() {
-  const limite = new Date(Date.now() - DELAI_ALERTE_RETOUR_OUTIL_JOURS * 24 * 3600 * 1000);
-  const enRetard = lireLignes(NOMS_FEUILLES.STOCK_OUTILLAGE)
-    .filter((o) => o.Statut === STATUTS_OUTIL.SORTI && o.DerniereMaj < limite);
+  const enRetard = listerOutilsNonRendus();
   if (enRetard.length === 0) {
     return;
   }
-  const lignes = enRetard.map((o) => '- ' + o.Outil + ' (lieu déclaré : ' + (o.Lieu || 'non précisé') + ', sorti le ' + o.DerniereMaj.toLocaleDateString('fr-FR') + ')');
-  alerterRoles([ROLES.STOCK], enRetard.length + ' outil(s) non rendu(s)', lignes.join('\n'));
+  const lignes = enRetard.map((o) => '- ' + o.outil + ' : pris par ' + o.prisPar + ' le '
+    + o.depuis.toLocaleDateString('fr-FR') + ' (' + o.joursDeRetard + ' j), lieu déclaré : ' + o.lieuDeclare);
+  alerterRoles([ROLES.STOCK], enRetard.length + ' outil(s) non rendu(s)',
+    'Outils non rendus à ce jour :\n\n' + lignes.join('\n'));
 }
 
 function installerDeclencheurOutils() {
