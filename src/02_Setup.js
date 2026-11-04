@@ -5,38 +5,56 @@
  */
 
 /**
- * À exécuter une seule fois (depuis l'éditeur Apps Script, menu Exécuter) pour créer
- * le classeur de données et toutes ses feuilles. Sans effet si le classeur existe déjà.
+ * À exécuter depuis l'éditeur Apps Script (menu Exécuter) pour créer le classeur de données
+ * s'il n'existe pas encore, puis pour créer toute feuille qui manquerait encore (idempotent :
+ * sans effet sur les feuilles déjà là, donc peut être relancée après l'ajout d'une nouvelle
+ * feuille dans ce fichier).
  */
 function initialiserBaseDeDonnees() {
   const proprietes = PropertiesService.getScriptProperties();
+  let classeur;
   if (proprietes.getProperty(PROP_ID_CLASSEUR)) {
-    Logger.log('Classeur déjà initialisé : ' + proprietes.getProperty(PROP_ID_CLASSEUR));
-    return;
+    classeur = SpreadsheetApp.openById(proprietes.getProperty(PROP_ID_CLASSEUR));
+  } else {
+    classeur = SpreadsheetApp.create('Maison Symbiose - Données');
+    proprietes.setProperty(PROP_ID_CLASSEUR, classeur.getId());
   }
 
-  const classeur = SpreadsheetApp.create('Maison Symbiose - Données');
-  proprietes.setProperty(PROP_ID_CLASSEUR, classeur.getId());
+  const feuilleUtilisateurs = creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.UTILISATEURS, ['Email', 'Nom', 'Role', 'Actif']);
+  if (feuilleUtilisateurs && feuilleUtilisateurs.getLastRow() < 2) {
+    feuilleUtilisateurs.appendRow(['michelgabinmbra@gmail.com', 'Michel', ROLES.DG, true]);
+  }
 
-  const feuilleUtilisateurs = creerFeuille(classeur, NOMS_FEUILLES.UTILISATEURS, ['Email', 'Nom', 'Role', 'Actif']);
-  feuilleUtilisateurs.appendRow(['michelgabinmbra@gmail.com', 'Michel', ROLES.DG, true]);
-  creerFeuille(classeur, NOMS_FEUILLES.AFFAIRES, [
-    'NumeroAffaire', 'Client', 'Statut', 'DateCreation', 'CreePar',
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.CLIENTS, ['NomClient', 'TypeContrat', 'ContactEmail']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.SITES, ['NomSite', 'NomClient', 'Ville']);
+
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.AFFAIRES, [
+    'NumeroAffaire', 'Client', 'Site', 'TypeIntervention', 'Source', 'Priorite',
+    'Groupe', 'Statut', 'DateCreation', 'CreePar',
   ]);
-  creerFeuille(classeur, NOMS_FEUILLES.DEVIS, [
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.DEVIS, [
     'NumeroDevis', 'NumeroAffaire', 'CoutEstime', 'MargeVisee', 'PrixPropose',
     'Statut', 'ValidePar', 'DateValidation',
   ]);
-  creerFeuille(classeur, NOMS_FEUILLES.FACTURES, [
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.FACTURES, [
     'NumeroFacture', 'NumeroAffaire', 'Montant', 'DateEmission', 'DelaiPaiementJours',
     'StatutPaiement', 'DateReception', 'DatePaiement',
   ]);
-  creerFeuille(classeur, NOMS_FEUILLES.STOCK_OUTILLAGE, ['Outil', 'Lieu', 'Statut', 'DerniereMaj']);
-  creerFeuille(classeur, NOMS_FEUILLES.STOCK_MATERIEL, ['Materiel', 'Quantite', 'PrixUnitaire']);
-  creerFeuille(classeur, NOMS_FEUILLES.MOUVEMENTS_OUTILLAGE, [
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.DEPENSES, [
+    'NumeroDepense', 'NumeroAffaire', 'Categorie', 'Montant', 'Date', 'Description', 'CreePar',
+  ]);
+
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.VEHICULES, ['Immatriculation', 'Marque', 'Modele']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.MOUVEMENTS_VEHICULE, [
+    'Immatriculation', 'Conducteur', 'Action', 'Kilometrage', 'VilleParcourue', 'PhotoUrl', 'Date',
+  ]);
+
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.STOCK_OUTILLAGE, ['Outil', 'Lieu', 'Statut', 'DerniereMaj']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.STOCK_MATERIEL, ['Materiel', 'Quantite', 'PrixUnitaire']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.MOUVEMENTS_OUTILLAGE, [
     'Outil', 'Agent', 'Action', 'Date', 'LieuDeclare', 'ConfirmeParJean',
   ]);
-  creerFeuille(classeur, NOMS_FEUILLES.MOUVEMENTS_MATERIEL, [
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.MOUVEMENTS_MATERIEL, [
     'Materiel', 'NumeroAffaire', 'Agent', 'QuantiteSortie', 'QuantitePosee',
     'QuantiteRapportee', 'Date',
   ]);
@@ -47,10 +65,15 @@ function initialiserBaseDeDonnees() {
     classeur.deleteSheet(feuilleParDefaut);
   }
 
-  Logger.log('Classeur créé : ' + classeur.getUrl());
+  Logger.log('Classeur prêt : ' + classeur.getUrl());
 }
 
-function creerFeuille(classeur, nom, entetes) {
+/** Crée la feuille si elle n'existe pas déjà ; ne touche jamais à une feuille existante. */
+function creerFeuilleSiAbsente(classeur, nom, entetes) {
+  const existante = classeur.getSheetByName(nom);
+  if (existante) {
+    return existante;
+  }
   const feuille = classeur.insertSheet(nom);
   feuille.getRange(1, 1, 1, entetes.length).setValues([entetes]).setFontWeight('bold');
   feuille.setFrozenRows(1);
@@ -68,7 +91,7 @@ function getClasseurDonnees() {
 function getFeuilleDonnees(nom) {
   const feuille = getClasseurDonnees().getSheetByName(nom);
   if (!feuille) {
-    throw new Error("Feuille introuvable : " + nom);
+    throw new Error("Feuille introuvable : " + nom + ". Relance initialiserBaseDeDonnees() pour la créer.");
   }
   return feuille;
 }
