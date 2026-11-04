@@ -101,19 +101,5 @@ function obtenirOuCreerDossierPhotos() {
 
 /** Envoie un mail d'alerte au référent véhicules (rôle VEHICULES dans Utilisateurs). */
 function alerterReferentVehicules(sujet, message) {
-  const feuille = getFeuilleDonnees(NOMS_FEUILLES.UTILISATEURS);
-  const valeurs = feuille.getDataRange().getValues();
-  const entetes = valeurs[0];
-  const colRole = entetes.indexOf('Role');
-  const colEmail = entetes.indexOf('Email');
-
-  const destinataires = valeurs.slice(1)
-    .filter((ligne) => ligne[colRole] === ROLES.VEHICULES)
-    .map((ligne) => ligne[colEmail]);
-
-  if (destinataires.length === 0) {
-    Logger.log("Aucun référent véhicules enregistré (rôle VEHICULES) : alerte non envoyée - " + sujet);
-    return;
-  }
-  MailApp.sendEmail(destinataires.join(','), '[Maison Symbiose] ' + sujet, message);
+  alerterRoles([ROLES.VEHICULES], sujet, message);
 }
