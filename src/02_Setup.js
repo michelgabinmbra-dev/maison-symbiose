@@ -18,7 +18,8 @@ function initialiserBaseDeDonnees() {
   const classeur = SpreadsheetApp.create('Maison Symbiose - Données');
   proprietes.setProperty(PROP_ID_CLASSEUR, classeur.getId());
 
-  creerFeuille(classeur, NOMS_FEUILLES.UTILISATEURS, ['Email', 'Nom', 'Role', 'Actif']);
+  const feuilleUtilisateurs = creerFeuille(classeur, NOMS_FEUILLES.UTILISATEURS, ['Email', 'Nom', 'Role', 'Actif']);
+  feuilleUtilisateurs.appendRow(['michelgabinmbra@gmail.com', 'Michel', ROLES.DG, true]);
   creerFeuille(classeur, NOMS_FEUILLES.AFFAIRES, [
     'NumeroAffaire', 'Client', 'Statut', 'DateCreation', 'CreePar',
   ]);
