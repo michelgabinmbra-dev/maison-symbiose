@@ -62,7 +62,12 @@ function creerDemandeDepuisMail(thread) {
 /** Première estimation du client à partir de l'adresse d'expéditeur ; à corriger si besoin. */
 function estimerClientDepuisExpediteur(expediteur) {
   const correspondance = /<(.+)>/.exec(expediteur);
-  return correspondance ? correspondance[1] : expediteur;
+  const adresse = String(correspondance ? correspondance[1] : expediteur).trim().toLowerCase();
+  const domaine = adresse.split('@')[1];
+  // Le client dont un contact (feuille Clients, ContactEmail) a le même domaine, ex. @afgbank.ci -> AFG.
+  const client = lireLignes(NOMS_FEUILLES.CLIENTS).filter((c) => String(c.ContactEmail).toLowerCase()
+    .split(/[,;\s]+/).some((contact) => contact && contact.split('@')[1] === domaine))[0];
+  return client ? client.NomClient : adresse;
 }
 
 function obtenirOuCreerLibelle(nom) {
