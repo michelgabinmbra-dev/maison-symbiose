@@ -20,7 +20,7 @@ function initialiserBaseDeDonnees() {
     proprietes.setProperty(PROP_ID_CLASSEUR, classeur.getId());
   }
 
-  const feuilleUtilisateurs = creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.UTILISATEURS, ['Email', 'Nom', 'Role', 'Actif']);
+  const feuilleUtilisateurs = creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.UTILISATEURS, ['Email', 'Nom', 'Role', 'Actif', 'CodeAcces', 'Telephone']);
   if (feuilleUtilisateurs && feuilleUtilisateurs.getLastRow() < 2) {
     feuilleUtilisateurs.appendRow(['michelgabinmbra@gmail.com', 'Michel', ROLES.DG, true]);
   }
@@ -30,7 +30,8 @@ function initialiserBaseDeDonnees() {
 
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.AFFAIRES, [
     'NumeroAffaire', 'Client', 'Site', 'TypeIntervention', 'Source', 'Priorite',
-    'Groupe', 'Statut', 'DateCreation', 'CreePar',
+    'Groupe', 'Statut', 'DateCreation', 'CreePar', 'Titre', 'Description', 'Agent',
+    'Avancement', 'Blocage', 'ProchaineAction', 'DelaiPrevu', 'DateMaj',
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.DEVIS, [
     'NumeroDevis', 'NumeroAffaire', 'CoutEstime', 'MargeVisee', 'PrixPropose',

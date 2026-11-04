@@ -51,6 +51,8 @@ function creerDemandeDepuisMail(thread) {
     typeIntervention: TYPES_INTERVENTION.CURATIF,
     source: SOURCES_DEMANDE.MAIL,
     priorite: '', // à fixer par le DG/DGA
+    titre: thread.getFirstMessageSubject(),
+    description: message.getPlainBody().slice(0, 1500),
   });
 
   Logger.log('Affaire ' + numero + " créée depuis le mail : " + thread.getFirstMessageSubject());

@@ -1,11 +1,10 @@
 {
   "timeZone": "Africa/Abidjan",
-  "dependencies": {
-  },
+  "dependencies": {},
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
   "webapp": {
     "executeAs": "USER_DEPLOYING",
-    "access": "DOMAIN"
+    "access": "ANYONE_ANONYMOUS"
   }
 }

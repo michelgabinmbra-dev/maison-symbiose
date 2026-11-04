@@ -162,8 +162,9 @@ function declarerRetourMateriel(materiel, numeroAffaire, quantitePosee, quantite
   let index = -1;
   for (let i = valeurs.length - 1; i >= 1; i--) {
     const ligne = ligneVersObjet(entetes, valeurs[i]);
+    const peutCloturer = ligne.Agent === utilisateur.nom || ROLES_GESTION_STOCK.indexOf(utilisateur.role) !== -1;
     if (ligne.Materiel === materiel && ligne.NumeroAffaire === numeroAffaire
-        && ligne.Agent === utilisateur.nom && ligne.QuantitePosee === '') {
+        && peutCloturer && ligne.QuantitePosee === '') {
       index = i;
       break;
     }
@@ -190,7 +191,7 @@ function declarerRetourMateriel(materiel, numeroAffaire, quantitePosee, quantite
   if (posee + rapportee !== sortie) {
     alerterRoles([ROLES.STOCK, ROLES.COMPTABILITE],
       'Écart matériel sur ' + numeroAffaire,
-      utilisateur.nom + ' a sorti ' + sortie + ' x ' + materiel + ', mais déclare ' + posee
+      String(valeurs[index][entetes.indexOf('Agent')]) + ' a sorti ' + sortie + ' x ' + materiel + ', mais déclare ' + posee
         + ' posé(s) et ' + rapportee + ' rapporté(s). Manque : ' + (sortie - posee - rapportee) + '.');
   }
 }

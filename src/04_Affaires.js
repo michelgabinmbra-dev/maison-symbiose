@@ -19,7 +19,7 @@ const STATUTS_AFFAIRE = {
 
 /**
  * Crée une nouvelle affaire (demande) pour un client/site.
- * @param {object} details {client, site, typeIntervention, source, priorite, groupe}
+ * @param {object} details {client, site, typeIntervention, source, priorite, groupe, titre, description, agent}
  *   - typeIntervention : une valeur de TYPES_INTERVENTION (Préventif/Curatif/Travaux/Sécurité)
  *   - source : une valeur de SOURCES_DEMANDE (Mail/Appel/Planifié)
  *   - priorite : une valeur de PRIORITES (Élevée/Moyenne/Faible), optionnelle pour le préventif planifié
@@ -48,8 +48,35 @@ function creerDemande(details) {
     STATUTS_AFFAIRE.NOUVELLE_DEMANDE,
     new Date(),
     utilisateur.email,
+    details.titre || '',
+    details.description || '',
+    details.agent || '',
+    0, '', '', '', new Date(),
   ]);
   return numero;
+}
+
+/**
+ * Met à jour le suivi d'une affaire (ce qui alimente le point de situation client) :
+ * {avancement (0-100), blocage, prochaineAction, delaiPrevu, agent, titre, description}.
+ * Seuls les champs fournis sont modifiés.
+ */
+function mettreAJourSuivi(numeroAffaire, suivi) {
+  exigerRole(Object.values(ROLES));
+  const feuille = getFeuilleDonnees(NOMS_FEUILLES.AFFAIRES);
+  const resultat = trouverAffaire(numeroAffaire);
+  const champs = {
+    avancement: 'Avancement', blocage: 'Blocage', prochaineAction: 'ProchaineAction',
+    delaiPrevu: 'DelaiPrevu', agent: 'Agent', titre: 'Titre', description: 'Description',
+  };
+  Object.keys(champs).forEach((cle) => {
+    if (suivi[cle] === undefined) return;
+    let valeur = suivi[cle];
+    if (cle === 'avancement') valeur = Math.max(0, Math.min(100, Number(valeur) || 0));
+    if (cle === 'delaiPrevu' && valeur) valeur = new Date(valeur);
+    majCellule(feuille, resultat, champs[cle], valeur);
+  });
+  majCellule(feuille, resultat, 'DateMaj', new Date());
 }
 
 /** Change la priorité d'une affaire (DG ou DGA) : sert à trier la vue "urgences". */

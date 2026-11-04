@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--nuit:#0B1442;--nuit2:#142266;--fond:#F3F5FB;--texte:#0F1733;--gris:#5A6585;--bord:#E6E9F4;--bleu:#2563EB}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--fond);color:var(--texte);font-family:Inter,system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh}
+h1,h2,h3,.titre{font-family:'Plus Jakarta Sans',Inter,sans-serif}
+button,input,select,textarea{font-family:inherit;font-size:16px}
+a{color:var(--bleu);text-decoration:none}
+#app{max-width:520px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:100px}
+.hero{position:relative;overflow:hidden;background:linear-gradient(160deg,#0B1442 0%,#142266 60%,#1B2C86 100%);padding:22px 20px 44px;color:#fff}
+.hero.court{padding-bottom:36px}
+.orb{position:absolute;border-radius:50%;pointer-events:none}
+.orb.a{width:220px;height:220px;right:-70px;top:-80px;background:radial-gradient(circle,rgba(59,130,246,.75),rgba(59,130,246,0) 70%)}
+.orb.b{width:200px;height:200px;left:-90px;bottom:-60px;background:radial-gradient(circle,rgba(236,72,153,.55),rgba(236,72,153,0) 70%)}
+.hero>*:not(.orb),.entete>*:not(.orb),.connexion>*:not(.orb){position:relative}
+.ligne{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#3B82F6,#8B5CF6 45%,#EC4899 75%,#F59E0B);display:flex;align-items:center;justify-content:center;flex:none}
+.surtitre{font-size:12px;color:#A9B6E8;letter-spacing:.04em;text-transform:uppercase}
+.hero h1{margin:0;font-size:23px;font-weight:800}
+.avatar{width:44px;height:44px;border-radius:22px;padding:2px;background:linear-gradient(135deg,#22D3EE,#A855F7,#F43F5E);border:none;flex:none}
+.avatar span{display:flex;width:100%;height:100%;border-radius:20px;background:#142266;color:#fff;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.tuiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}
+.tuile{border-radius:18px;padding:14px;color:#fff;display:flex;flex-direction:column;gap:2px;border:none;text-align:left}
+.tuile b{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:30px;font-weight:800;line-height:1}
+.tuile span{font-size:13px;font-weight:500}
+.t1{background:linear-gradient(135deg,#2563EB,#1E40AF);box-shadow:0 10px 24px rgba(37,99,235,.35)}
+.t2{background:linear-gradient(135deg,#EA580C,#BE123C);box-shadow:0 10px 24px rgba(225,29,72,.35)}
+.t3{background:linear-gradient(135deg,#7C3AED,#BE185D);box-shadow:0 10px 24px rgba(124,58,237,.35)}
+.t4{background:linear-gradient(135deg,#0F766E,#0E7490);box-shadow:0 10px 24px rgba(14,116,144,.35)}
+.feuille{margin-top:-24px;position:relative;background:var(--fond);border-radius:26px 26px 0 0;padding:18px 16px 0;display:flex;flex-direction:column;gap:10px}
+.bandeau{border-radius:16px;padding:12px 14px;background:linear-gradient(110deg,#0B1442,#3B2A9B 60%,#7C3AED);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 8px 20px rgba(59,42,155,.28);border:none;width:100%;text-align:left}
+.bandeau small{display:block;font-size:12px;color:#D4D9FF;font-weight:400}
+.bandeau strong{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:15px}
+.rond{width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex:none}
+h2{margin:4px 2px 0;font-size:17px;font-weight:800}
+.carte{background:#fff;border-radius:16px;padding:12px;box-shadow:0 4px 14px rgba(15,23,51,.07);display:flex;flex-direction:column;gap:8px}
+.item{background:#fff;border-radius:16px;padding:12px;display:flex;gap:12px;align-items:center;box-shadow:0 4px 14px rgba(15,23,51,.07);border:none;width:100%;text-align:left;color:var(--texte)}
+.item.pointille{border:1.5px dashed #A5B4FC;box-shadow:none}
+.ico{width:44px;height:44px;flex:none;border-radius:14px;display:flex;align-items:center;justify-content:center}
+.ico.bleu{background:linear-gradient(135deg,#38BDF8,#2563EB)}.ico.rouge{background:linear-gradient(135deg,#FB923C,#E11D48)}
+.ico.jaune{background:linear-gradient(135deg,#FBBF24,#EA580C)}.ico.violet{background:linear-gradient(135deg,#A78BFA,#7C3AED)}
+.ico.vert{background:linear-gradient(135deg,#34D399,#0F766E)}.ico.pale{background:#EEF2FF}
+.txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.txt b{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.txt small{font-size:12px;color:var(--gris)}
+.pastille{flex:none;font-size:11px;font-weight:700;padding:5px 9px;border-radius:999px;white-space:nowrap}
+.p-elevee{color:#fff;background:linear-gradient(135deg,#F43F5E,#BE123C);animation:pulse 1.8s infinite}
+.p-moyenne{color:#92400E;background:#FEF3C7}.p-faible{color:#065F46;background:#D1FAE5}.p-vide{color:#3730A3;background:#E0E7FF}
+.p-ok{color:#065F46;background:#D1FAE5}.p-alerte{color:#9F1239;background:#FFE4E6}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}70%{box-shadow:0 0 0 8px rgba(244,63,94,0)}100%{box-shadow:0 0 0 0 rgba(244,63,94,0)}}
+@media (prefers-reduced-motion:reduce){.p-elevee{animation:none}}
+nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:492px;height:66px;border-radius:22px;background:var(--nuit);box-shadow:0 14px 30px rgba(11,20,66,.35);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;z-index:10}
+nav button{background:none;border:none;color:#A9B6E8;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:500;height:60px;justify-content:center}
+nav button.actif{color:#fff;font-weight:700}
+nav .plus{width:54px;height:54px;margin:-26px auto 0;border-radius:27px;border:4px solid var(--fond);background:linear-gradient(135deg,#3B82F6,#8B5CF6 50%,#EC4899);box-shadow:0 10px 22px rgba(139,92,246,.45);color:#fff}
+.entete{background:linear-gradient(160deg,#0B1442,#142266 60%,#1B2C86);color:#fff;padding:14px 18px 34px;position:relative;overflow:hidden}
+.retour{background:none;border:none;color:#C7D2FE;display:flex;align-items:center;gap:4px;font-size:14px;font-weight:600;height:36px;padding:0}
+.entete h1{margin:6px 0 2px;font-size:21px;font-weight:800}
+.entete p{margin:0;color:#C7D2FE;font-size:13px}
+label{font-size:13px;font-weight:600;color:#3E4A6B;display:block;margin-bottom:6px}
+input,select,textarea{width:100%;min-height:48px;border-radius:12px;border:1px solid #C9D0E3;padding:0 14px;background:#fff;color:var(--texte)}
+textarea{padding:12px 14px;min-height:80px;resize:vertical}
+input[type=range]{padding:0;border:none;min-height:36px}
+.champ{display:flex;flex-direction:column}
+.bouton{height:52px;border-radius:16px;border:none;background:linear-gradient(110deg,#22D3EE,#3B82F6 45%,#8B5CF6);color:#fff;font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:15px;font-weight:800;box-shadow:0 10px 24px rgba(59,130,246,.35);width:100%;padding:0 16px}
+.bouton.second{background:#fff;color:var(--texte);border:1px solid #C9D0E3;box-shadow:none;font-family:Inter,sans-serif;font-weight:700}
+.bouton:disabled{opacity:.5}
+.deux{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.puces{display:flex;gap:8px;flex-wrap:wrap}
+.puce{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid #C9D0E3;background:#fff;color:var(--texte);font-weight:600;font-size:14px}
+.puce.on{border:none;background:linear-gradient(135deg,#2563EB,#7C3AED);color:#fff}
+.etapes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.etapes i{height:6px;border-radius:3px;background:#D5DAE8}
+.etapes i.on{background:linear-gradient(90deg,#3B82F6,#8B5CF6)}
+.etiquettes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;font-size:10px;color:var(--gris)}
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.kv span:first-child{color:var(--gris)}
+.gros{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:28px;font-weight:800}
+.resultat{border-radius:16px;padding:16px;background:linear-gradient(110deg,#1E3A8A,#5B21B6 60%,#9D174D);color:#fff;display:flex;flex-direction:column;gap:6px}
+.resultat .kv span:first-child{color:#DDE3FF}
+.lp{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lp input{width:124px;text-align:right;font-weight:700;flex:none}
+.lp input.main{border:2px solid #EA580C;background:#FFF7ED}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:44px;height:44px;border-radius:12px;border:1px solid #C9D0E3;background:#fff;font-size:18px;color:var(--texte)}
+.stepper b{min-width:48px;text-align:center}
+.photo{height:150px;border-radius:16px;border:2px dashed #9AA5C9;background:#fff;color:#3E4A6B;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;overflow:hidden;position:relative}
+.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.photo input{position:absolute;inset:0;opacity:0;min-height:0}
+.vide{color:var(--gris);font-size:14px;text-align:center;padding:16px}
+.erreur{background:#FFE4E6;color:#9F1239;border-radius:12px;padding:12px;font-size:14px}
+#toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#0B1442;color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;z-index:20;max-width:90%;display:none}
+#chargement{position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#22D3EE,#8B5CF6,#EC4899);display:none;z-index:30}
+.section{padding:0 16px;display:flex;flex-direction:column;gap:12px;margin-top:-20px;position:relative}
+.connexion{min-height:100vh;background:linear-gradient(170deg,#0B1442,#142266 55%,#22307F);color:#fff;padding:60px 24px;display:flex;flex-direction:column;gap:18px;position:relative;overflow:hidden}
+.connexion .carte{color:var(--texte);gap:14px;padding:18px}
+</style>
+</head>
+<body>
+<div id="chargement"></div>
+<div id="app"></div>
+<div id="toast" role="status"></div>
+<script>
+const ICONES = {
+  outil: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+  maison: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  liste: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  auto: '<path d="M3 16V11l2-5h14l2 5v5"/><path d="M3 16h18"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+  courbe: '<path d="M4 19V5M4 19h16M8 15l4-4 3 3 5-6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  gauche: '<path d="M15 6l-6 6 6 6"/>', droite: '<path d="M9 6l6 6-6 6"/>',
+  froid: '<path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5L4.9 17.5"/>',
+  eclair: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  ampoule: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  bouclier: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  photo: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  boite: '<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+};
+function svg(nom, taille, couleur, epaisseur) {
+  return '<svg aria-hidden="true" width="' + (taille || 22) + '" height="' + (taille || 22) + '" viewBox="0 0 24 24" fill="none" stroke="' + (couleur || 'currentColor') + '" stroke-width="' + (epaisseur || 2) + '" stroke-linecap="round" stroke-linejoin="round">' + ICONES[nom] + '</svg>';
+}
+function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fcfa(n) { return Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' F'; }
+function dateCourte(d) { if (!d) return ''; const x = new Date(d); return x.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }); }
+function depuis(d) {
+  if (!d) return ''; const m = Math.round((Date.now() - new Date(d)) / 60000);
+  if (m < 60) return 'il y a ' + Math.max(m, 1) + ' min'; if (m < 1440) return 'il y a ' + Math.round(m / 60) + ' h';
+  if (m < 2880) return 'hier'; return 'le ' + dateCourte(d);
+}
+function $(id) { return document.getElementById(id); }
+
+let JETON = null;
+try { JETON = localStorage.getItem('ms_jeton'); } catch (e) {}
+let MOI = null;
+try { MOI = JSON.parse(localStorage.getItem('ms_moi') || 'null'); } catch (e) {}
+const etat = { pile: [] };
+
+function toast(message) {
+  const t = $('toast'); t.textContent = message; t.style.display = 'block';
+  clearTimeout(toast.minuteur); toast.minuteur = setTimeout(() => { t.style.display = 'none'; }, 3200);
+}
+function appel(action, args) {
+  $('chargement').style.display = 'block';
+  return new Promise((ok, ko) => {
+    google.script.run
+      .withSuccessHandler((r) => { $('chargement').style.display = 'none'; ok(r); })
+      .withFailureHandler((e) => {
+        $('chargement').style.display = 'none';
+        const msg = (e && e.message) || String(e);
+        if (msg.indexOf('SESSION_EXPIREE') !== -1) { seDeconnecter(); ko(new Error('Session expirée, reconnecte-toi.')); return; }
+        ko(new Error(msg.replace(/^Error: /, '').replace(/^Exception: /, '')));
+      })
+      .api(JETON, action, args || {});
+  });
+}
+function echec(e) { toast(e.message || String(e)); }
+
+function estChef() { return MOI && (MOI.role === 'DG' || MOI.role === 'DGA'); }
+function voitFinances() { return MOI && ['DG', 'DGA', 'COMPTABILITE'].indexOf(MOI.role) !== -1; }
+function initiales(nom) { return String(nom || '?').split(/\s+/).map((m) => m[0]).join('').slice(0, 2).toUpperCase(); }
+
+function aller(ecran, params, sansHistorique) {
+  if (!sansHistorique && etat.courant) etat.pile.push(etat.courant);
+  etat.courant = { ecran, params: params || {} };
+  window.scrollTo(0, 0);
+  ECRANS[ecran](params || {});
+}
+function revenir() {
+  const precedent = etat.pile.pop();
+  if (precedent) { etat.courant = precedent; ECRANS[precedent.ecran](precedent.params); } else aller('accueil', {}, true);
+}
+function racine(ecran) { etat.pile = []; etat.courant = null; aller(ecran); }
+
+function rendre(html, ongletActif) {
+  $('app').innerHTML = html + (ongletActif === null ? '' : navigation(ongletActif));
+}
+function navigation(actif) {
+  const b = (id, ico, nom) => '<button class="' + (actif === id ? 'actif' : '') + '" onclick="racine(\'' + id + '\')">' + svg(ico) + nom + '</button>';
+  return '<nav aria-label="Navigation">' + b('accueil', 'maison', 'Accueil') + b('affaires', 'liste', 'Affaires')
+    + '<span><button class="plus" aria-label="Nouvelle demande" onclick="aller(\'nouvelle\')">' + svg('plus', 24, '#fff', 2.6) + '</button></span>'
+    + b('vehicules', 'auto', 'Véhicules') + (voitFinances() ? b('argent', 'courbe', 'Argent') : b('materiel', 'outil', 'Matériel')) + '</nav>';
+}
+function entete(titre, sousTitre) {
+  return '<div class="entete"><div class="orb a"></div><button class="retour" onclick="revenir()">' + svg('gauche', 18, 'currentColor', 2.2) + 'Retour</button>'
+    + '<h1>' + esc(titre) + '</h1>' + (sousTitre ? '<p>' + sousTitre + '</p>' : '') + '</div>';
+}
+function pastillePriorite(p) {
+  const c = { 'Élevée': 'p-elevee', 'Moyenne': 'p-moyenne', 'Faible': 'p-faible' }[p] || 'p-vide';
+  return '<span class="pastille ' + c + '">' + esc(p || 'À trier') + '</span>';
+}
+function iconeType(a) {
+  if (a.source === 'Mail' && !a.priorite) return '<span class="ico pale">' + svg('mail', 22, '#4F46E5') + '</span>';
+  const t = { 'Curatif': ['rouge', 'eclair'], 'Préventif': ['bleu', 'froid'], 'Travaux': ['jaune', 'ampoule'], 'Sécurité': ['violet', 'bouclier'] }[a.type] || ['bleu', 'outil'];
+  return '<span class="ico ' + t[0] + '">' + svg(t[1], 22, '#fff') + '</span>';
+}
+function carteAffaire(a) {
+  return '<button class="item' + (a.priorite ? '' : ' pointille') + '" onclick="aller(\'affaire\',{numero:\'' + esc(a.numero) + '\'})">' + iconeType(a)
+    + '<span class="txt"><b>' + esc(a.titre) + '</b><small>' + esc(a.client) + (a.site ? ' · ' + esc(a.site) : '') + ' · ' + esc(depuis(a.date)) + ' · ' + esc(a.source) + '</small></span>'
+    + pastillePriorite(a.priorite) + '</button>';
+}
+
+// ---------- Connexion ----------
+function ecranConnexion(erreur) {
+  rendre('<div class="connexion"><div class="orb a"></div><div class="orb b"></div>'
+    + '<div class="logo" style="width:56px;height:56px;border-radius:16px">' + svg('outil', 28, '#fff', 2.2) + '</div>'
+    + '<div><div class="surtitre">Symbiose</div><h1 style="margin:4px 0 0;font-size:28px;font-weight:800">Maison Symbiose</h1></div>'
+    + '<form class="carte" onsubmit="seConnecter(event)">'
+    + (erreur ? '<div class="erreur">' + esc(erreur) + '</div>' : '')
+    + '<div class="champ"><label for="email">Ton email</label><input id="email" type="email" autocomplete="username" required></div>'
+    + '<div class="champ"><label for="code">Ton code</label><input id="code" type="password" inputmode="numeric" autocomplete="current-password" required></div>'
+    + '<button class="bouton" type="submit">Se connecter</button>'
+    + '<small style="color:#5A6585">Pas de code ? Demande-le à Michel.</small></form></div>', null);
+}
+function seConnecter(ev) {
+  ev.preventDefault();
+  const email = $('email').value, code = $('code').value;
+  $('chargement').style.display = 'block';
+  google.script.run.withSuccessHandler((r) => {
+    $('chargement').style.display = 'none';
+    JETON = r.jeton; MOI = r.utilisateur;
+    try { localStorage.setItem('ms_jeton', JETON); localStorage.setItem('ms_moi', JSON.stringify(MOI)); } catch (e) {}
+    racine('accueil');
+  }).withFailureHandler((e) => { $('chargement').style.display = 'none'; ecranConnexion(String(e.message || e).replace(/^(Error|Exception): /, '')); })
+    .connexionApp(email, code);
+}
+function seDeconnecter() {
+  if (JETON) google.script.run.deconnexionApp(JETON);
+  JETON = null; MOI = null;
+  try { localStorage.removeItem('ms_jeton'); localStorage.removeItem('ms_moi'); } catch (e) {}
+  ecranConnexion();
+}
+
+const ECRANS = {};
+
+// ---------- Accueil ----------
+ECRANS.accueil = function () {
+  appel('ecranAccueil').then((d) => {
+    MOI = d.utilisateur;
+    try { localStorage.setItem('ms_moi', JSON.stringify(MOI)); } catch (e) {}
+    const jour = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const c = d.compteurs;
+    rendre('<div class="hero"><div class="orb a"></div><div class="orb b"></div>'
+      + '<div class="ligne"><div style="display:flex;align-items:center;gap:12px"><div class="logo">' + svg('outil', 22, '#fff', 2.2) + '</div>'
+      + '<div><div class="surtitre">' + esc(jour) + '</div><h1>Bonjour ' + esc(String(MOI.nom || '').split(' ')[0]) + '</h1></div></div>'
+      + '<button class="avatar" aria-label="Mon compte" onclick="aller(\'compte\')"><span>' + esc(initiales(MOI.nom)) + '</span></button></div>'
+      + '<div class="tuiles">'
+      + '<button class="tuile t1" onclick="racine(\'affaires\')"><b>' + c.aTraiter + '</b><span>Demandes à traiter</span></button>'
+      + '<button class="tuile t2" onclick="racine(\'affaires\')"><b>' + c.urgences + '</b><span>Urgences en cours</span></button>'
+      + '<div class="tuile t3"><b>' + c.facturesEnRetard + '</b><span>Facture' + (c.facturesEnRetard > 1 ? 's' : '') + ' en retard</span></div>'
+      + '<div class="tuile t4"><b>' + c.enExecution + '</b><span>En exécution</span></div></div></div>'
+      + '<div class="feuille">'
+      + (voitFinances() ? '<button class="bandeau" onclick="aller(\'point\')"><span><strong>Point de situation en 5 s</strong><small>AFG, UCP-FM… prêt en PDF ou par mail</small></span><span class="rond">' + svg('droite', 18, '#fff', 2.4) + '</span></button>' : '')
+      + (voitFinances() ? '<button class="item" onclick="aller(\'materiel\')"><span class="ico vert">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Matériel et outils</b><small>Je prends, je rends, outils non rendus</small></span></button>' : '')
+      + '<div class="ligne"><h2>Urgences, tous clients</h2><a href="#" onclick="racine(\'affaires\');return false">Tout voir</a></div>'
+      + (d.urgences.length ? d.urgences.map(carteAffaire).join('') : '<div class="vide">Aucune affaire en cours.</div>')
+      + '</div>', 'accueil');
+  }).catch(echec);
+};
+
+// ---------- Affaires ----------
+ECRANS.affaires = function (p) {
+  appel('listeAffaires', { tout: !!p.tout }).then((liste) => {
+    rendre('<div class="hero court"><div class="orb a"></div><h1>Affaires</h1><p style="margin:4px 0 0;color:#C7D2FE;font-size:13px">' + liste.length + (p.tout ? ' au total' : ' en cours') + '</p></div>'
+      + '<div class="feuille"><div class="puces"><button class="puce ' + (p.tout ? '' : 'on') + '" onclick="aller(\'affaires\',{},true)">En cours</button>'
+      + '<button class="puce ' + (p.tout ? 'on' : '') + '" onclick="aller(\'affaires\',{tout:true},true)">Toutes</button></div>'
+      + (liste.length ? liste.map(carteAffaire).join('') : '<div class="vide">Aucune affaire.</div>') + '</div>', 'affaires');
+  }).catch(echec);
+};
+
+const ETAPES = [['Nouvelle demande', 'Demande'], ['Devis validé', 'Proforma'], ['En exécution', 'Bon reçu'], ['Facture émise', 'Facture'], ['Réception confirmée', 'Réception'], ['Payée', 'Payée']];
+function rangEtape(statut) {
+  const ordre = ['Nouvelle demande', 'Devis à revoir', 'Devis validé', 'En exécution', 'Facture émise', 'Réception confirmée', 'Payée'];
+  const r = ordre.indexOf(statut); return r <= 1 ? 0 : r - 1;
+}
+
+ECRANS.affaire = function (p) {
+  appel('ecranAffaire', { numero: p.numero }).then((d) => {
+    const a = d.affaire; etat.affaire = d;
+    const rang = rangEtape(a.Statut);
+    const delai = a.DelaiPrevu ? new Date(a.DelaiPrevu).toISOString().slice(0, 10) : '';
+    let html = entete(a.Titre || a.TypeIntervention, esc(a.NumeroAffaire) + ' · ' + esc(a.TypeIntervention) + ' · ' + esc(a.Source) + '<br>' + esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : '') + (a.Agent ? ' · Agent : ' + esc(a.Agent) : ''))
+      + '<div class="section">'
+      + '<div class="carte"><div class="ligne"><b style="font-size:13px;color:#5A6585">OÙ EN EST LE DOSSIER</b>' + pastillePriorite(a.Priorite) + '</div>'
+      + '<div class="etapes">' + ETAPES.map((e, i) => '<i class="' + (i <= rang ? 'on' : '') + '"></i>').join('') + '</div>'
+      + '<div class="etiquettes">' + ETAPES.map((e, i) => '<span' + (i === rang ? ' style="color:#0F1733;font-weight:700"' : '') + '>' + e[1] + '</span>').join('') + '</div>'
+      + '<div style="font-size:14px">Statut : <b>' + esc(a.Statut) + '</b></div>'
+      + (d.peutGerer || d.voitFinances ? '<select aria-label="Changer le statut" onchange="changerStatut(this.value)"><option value="">Changer le statut…</option>' + d.statuts.map((s) => '<option>' + esc(s) + '</option>').join('') + '</select>' : '')
+      + (d.peutGerer ? '<div class="puces">' + ['Élevée', 'Moyenne', 'Faible'].map((pr) => '<button class="puce ' + (a.Priorite === pr ? 'on' : '') + '" onclick="definirPriorite(\'' + pr + '\')">' + pr + '</button>').join('') + '</div>' : '')
+      + '</div>'
+      + (a.Description ? '<div class="carte"><b style="font-size:13px;color:#5A6585">DEMANDE</b><div style="font-size:14px;white-space:pre-line">' + esc(String(a.Description).slice(0, 600)) + '</div></div>' : '')
+      + '<form class="carte" onsubmit="enregistrerSuivi(event)"><b style="font-size:13px;color:#5A6585">SUIVI (alimente le point de situation)</b>'
+      + '<div class="champ"><label for="av">Avancement : <span id="avv">' + (Number(a.Avancement) || 0) + '</span> %</label><input id="av" type="range" min="0" max="100" step="10" value="' + (Number(a.Avancement) || 0) + '" oninput="$(\'avv\').textContent=this.value"></div>'
+      + '<div class="champ"><label for="pa">Prochaine action</label><input id="pa" value="' + esc(a.ProchaineAction) + '" placeholder="Ex. remplacer le compresseur"></div>'
+      + '<div class="champ"><label for="dl">Prévu le</label><input id="dl" type="date" value="' + delai + '"></div>'
+      + '<div class="champ"><label for="bl">Blocage / difficulté</label><input id="bl" value="' + esc(a.Blocage) + '" placeholder="Ex. en attente du bon de commande"></div>'
+      + '<div class="champ"><label for="ag">Agent sur place</label><input id="ag" value="' + esc(a.Agent) + '"></div>'
+      + '<button class="bouton second" type="submit">Enregistrer le suivi</button></form>';
+    if (d.voitFinances) {
+      html += '<button class="item" onclick="aller(\'proforma\',{numero:\'' + esc(a.NumeroAffaire) + '\'})"><span class="ico violet">' + svg('liste', 22, '#fff') + '</span><span class="txt"><b>Proforma</b><small>'
+        + (d.devis ? esc(d.devis.NumeroDevis) + ' · ' + fcfa(d.devis.PrixPropose) + ' · marge réelle ' + esc(d.devis.MargeReelle) + ' %' : 'À créer')
+        + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>';
+    }
+    const totalDep = d.depenses.reduce((s, x) => s + Number(x.Montant), 0);
+    html += '<div class="carte"><div class="ligne"><b>Dépenses du marché</b><b>' + fcfa(totalDep) + '</b></div>'
+      + d.depenses.map((x) => '<div class="kv"><span>' + esc(x.Categorie) + (x.Description ? ' · ' + esc(x.Description) : '') + '</span><span>' + fcfa(x.Montant) + '</span></div>').join('')
+      + '<details><summary style="font-weight:600;color:#2563EB;min-height:44px;display:flex;align-items:center">+ Ajouter une dépense</summary>'
+      + '<form onsubmit="ajouterDepense(event)" style="display:flex;flex-direction:column;gap:10px">'
+      + '<select id="dc" aria-label="Catégorie">' + d.categories.map((c) => '<option>' + esc(c) + '</option>').join('') + '</select>'
+      + '<input id="dm" type="number" inputmode="numeric" placeholder="Montant (F)" aria-label="Montant" required>'
+      + '<input id="dd" placeholder="Description" aria-label="Description">'
+      + '<button class="bouton" type="submit">Ajouter</button></form></details></div>';
+    if (d.bilan) {
+      html += '<div class="resultat"><div class="kv"><span>Montant du marché</span><span>' + fcfa(d.bilan.recettesFacturees + d.bilan.recettesPrevues) + '</span></div>'
+        + '<div class="kv"><span>Dépenses</span><span>' + fcfa(d.bilan.totalDepenses) + '</span></div>'
+        + '<div class="kv"><span>Commission + impôt</span><span>' + fcfa(d.bilan.commissions + d.bilan.impots) + '</span></div>'
+        + '<div class="kv" style="font-weight:700"><span style="color:#fff">Bénéfice net</span><span>' + fcfa(d.bilan.beneficeNet) + (d.bilan.margeNettePourcent != null ? ' (' + d.bilan.margeNettePourcent + ' %)' : '') + '</span></div></div>';
+    }
+    rendre(html + '</div>', 'affaires');
+  }).catch(echec);
+};
+function numeroCourant() { return etat.affaire.affaire.NumeroAffaire; }
+function rafraichirAffaire() { ECRANS.affaire({ numero: numeroCourant() }); }
+function changerStatut(s) { if (!s) return; appel('changerStatut', { numero: numeroCourant(), statut: s }).then(() => { toast('Statut mis à jour'); rafraichirAffaire(); }).catch(echec); }
+function definirPriorite(p) { appel('definirPriorite', { numero: numeroCourant(), priorite: p }).then(() => { toast('Priorité : ' + p); rafraichirAffaire(); }).catch(echec); }
+function enregistrerSuivi(ev) {
+  ev.preventDefault();
+  appel('mettreAJourSuivi', { numero: numeroCourant(), suivi: { avancement: $('av').value, prochaineAction: $('pa').value, delaiPrevu: $('dl').value || '', blocage: $('bl').value, agent: $('ag').value } })
+    .then(() => { toast('Suivi enregistré'); rafraichirAffaire(); }).catch(echec);
+}
+function ajouterDepense(ev) {
+  ev.preventDefault();
+  appel('enregistrerDepense', { numero: numeroCourant(), categorie: $('dc').value, montant: $('dm').value, description: $('dd').value })
+    .then(() => { toast('Dépense ajoutée'); rafraichirAffaire(); }).catch(echec);
+}
+
+// ---------- Nouvelle demande ----------
+ECRANS.nouvelle = function () {
+  appel('listeClients').then((clients) => {
+    etat.clients = clients;
+    rendre(entete('Nouvelle demande', 'Mail, appel ou maintenance planifiée')
+      + '<form class="section" onsubmit="creerDemandeUI(event)"><div class="carte" style="gap:14px">'
+      + '<div class="champ"><label for="nc">Client</label><input id="nc" list="lc" required placeholder="AFG, UCP-FM…" oninput="majSites()"><datalist id="lc">' + clients.map((c) => '<option value="' + esc(c.nom) + '">').join('') + '</datalist></div>'
+      + '<div class="champ"><label for="ns">Site / agence</label><input id="ns" list="ls" placeholder="Ex. Sikensi"><datalist id="ls"></datalist></div>'
+      + '<div class="champ"><label for="nt">Problème signalé</label><input id="nt" required placeholder="Ex. clim en panne, salle serveur"></div>'
+      + '<div class="champ"><label for="nd">Détails</label><textarea id="nd"></textarea></div>'
+      + '<div class="champ"><label>Type</label><div class="puces" id="ptype">' + ['Curatif', 'Préventif', 'Travaux', 'Sécurité'].map((t, i) => '<button type="button" class="puce ' + (i ? '' : 'on') + '" onclick="choisir(\'ptype\',this)">' + t + '</button>').join('') + '</div></div>'
+      + '<div class="champ"><label>Reçue par</label><div class="puces" id="psrc">' + ['Appel', 'Mail', 'Planifié'].map((t, i) => '<button type="button" class="puce ' + (i ? '' : 'on') + '" onclick="choisir(\'psrc\',this)">' + t + '</button>').join('') + '</div></div>'
+      + '<div class="champ"><label>Priorité</label><div class="puces" id="pprio">' + ['Élevée', 'Moyenne', 'Faible'].map((t, i) => '<button type="button" class="puce ' + (i === 1 ? 'on' : '') + '" onclick="choisir(\'pprio\',this)">' + t + '</button>').join('') + '</div></div>'
+      + '<button class="bouton" type="submit">Créer la demande</button></div></form>', null);
+  }).catch(echec);
+};
+function choisir(groupe, bouton) { $(groupe).querySelectorAll('.puce').forEach((b) => b.classList.remove('on')); bouton.classList.add('on'); }
+function choix(groupe) { const b = $(groupe).querySelector('.puce.on'); return b ? b.textContent : ''; }
+function majSites() {
+  const c = (etat.clients || []).filter((x) => x.nom === $('nc').value)[0];
+  $('ls').innerHTML = c ? c.sites.map((s) => '<option value="' + esc(s) + '">').join('') : '';
+}
+function creerDemandeUI(ev) {
+  ev.preventDefault();
+  appel('creerDemande', { client: $('nc').value.trim(), site: $('ns').value.trim(), titre: $('nt').value.trim(), description: $('nd').value, typeIntervention: choix('ptype'), source: choix('psrc'), priorite: choix('pprio') })
+    .then((numero) => { toast('Demande ' + numero + ' créée'); etat.pile = []; etat.courant = { ecran: 'accueil', params: {} }; aller('affaire', { numero }); }).catch(echec);
+}
+
+// ---------- Proforma ----------
+ECRANS.proforma = function (p) {
+  appel('ecranAffaire', { numero: p.numero }).then((d) => {
+    etat.affaire = d;
+    const a = d.affaire, dv = d.devis;
+    if (!dv) {
+      rendre(entete('Proforma', esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : ''))
+        + '<div class="section"><div class="carte"><div style="font-size:14px">Pas encore de proforma pour cette affaire. Marge nette visée 30 %, commission 10 %, impôt 10 % (modifiables ensuite).</div>'
+        + '<button class="bouton" onclick="creerProforma()">Créer la proforma</button></div></div>', null);
+      return;
+    }
+    const lignes = d.lignes;
+    const html = entete('Proforma ' + dv.NumeroDevis.replace('DEV', 'PRO'), esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : '') + ' · ' + esc(dv.Statut))
+      + '<div class="section">'
+      + '<div class="carte"><b style="font-size:13px;color:#5A6585">LIGNES : COÛT → PRIX (modifiable)</b>'
+      + (lignes.length ? lignes.map((l) => '<div class="lp"><div class="txt"><b style="white-space:normal">' + esc(l.NumeroLigne) + '. ' + esc(l.Designation) + '</b><small>' + esc(l.Quantite) + ' × coût ' + fcfa(l.CoutUnitaire) + ' · ' + (l.PrixModifieMain === true ? 'modifié à la main' : 'calculé') + '</small></div>'
+        + '<input class="' + (l.PrixModifieMain === true ? 'main' : '') + '" inputmode="numeric" aria-label="Prix unitaire ligne ' + esc(l.NumeroLigne) + '" value="' + Math.round(l.PrixUnitaire) + '" onchange="modifierPrix(' + Number(l.NumeroLigne) + ',this.value)"></div>').join('') : '<div class="vide">Ajoute la première ligne.</div>')
+      + '<details' + (lignes.length ? '' : ' open') + '><summary style="font-weight:600;color:#2563EB;min-height:44px;display:flex;align-items:center">+ Ajouter une ligne</summary>'
+      + '<form onsubmit="ajouterLigne(event)" style="display:flex;flex-direction:column;gap:10px"><input id="ld" placeholder="Désignation" aria-label="Désignation" required>'
+      + '<div class="deux"><input id="lq" type="number" inputmode="decimal" value="1" min="0" step="any" aria-label="Quantité" required><input id="lc" type="number" inputmode="numeric" placeholder="Coût unitaire" aria-label="Coût unitaire" required></div>'
+      + '<button class="bouton" type="submit">Ajouter la ligne</button></form></details></div>'
+      + '<div class="carte"><b style="font-size:13px;color:#5A6585">MARGE NETTE VISÉE (après impôt et commission)</b>'
+      + '<div class="puces">' + [25, 30, 35, 40].map((m) => '<button class="puce ' + (Number(dv.MargeVisee) === m ? 'on' : '') + '" onclick="changerTaux({marge:' + m + '})">' + m + ' %</button>').join('') + '</div>'
+      + stepper('Commission (% du marché)', 'commission', dv.TauxCommission) + stepper('Impôt (% du marché)', 'impot', dv.TauxImpot)
+      + '<button class="bouton second" onclick="changerTaux({reinitialiser:true})">Recalculer toutes les lignes</button></div>'
+      + resultatProforma(dv, lignes)
+      + '<div class="deux"><button class="bouton second" onclick="pdfProforma()">PDF client</button><button class="bouton" onclick="envoyerProforma()">Envoyer à ' + esc(a.Client) + '</button></div>'
+      + (dv.Statut !== 'Validé' ? '<button class="bouton second" onclick="validerProforma()">Marquer comme validée par le client</button>' : '')
+      + '</div>';
+    rendre(html, null);
+  }).catch(echec);
+};
+function stepper(nom, cle, valeur) {
+  const v = Number(valeur);
+  return '<div class="ligne" style="font-size:14px"><span>' + nom + '</span><span class="stepper"><button aria-label="Baisser" onclick="changerTaux({' + cle + ':' + (v - 1) + '})">−</button><b>' + v + ' %</b><button aria-label="Augmenter" onclick="changerTaux({' + cle + ':' + (v + 1) + '})">+</button></span></div>';
+}
+function resultatProforma(dv, lignes) {
+  const cout = lignes.reduce((s, l) => s + Number(l.Quantite) * Number(l.CoutUnitaire), 0);
+  const prix = lignes.reduce((s, l) => s + Number(l.Quantite) * Number(l.PrixUnitaire), 0);
+  const com = prix * Number(dv.TauxCommission) / 100, imp = prix * Number(dv.TauxImpot) / 100;
+  const net = prix - cout - com - imp, marge = prix ? Math.round(net / prix * 1000) / 10 : 0;
+  return '<div class="resultat"><b style="font-size:13px;color:#DDE3FF">PRIX À PROPOSER AU CLIENT</b><div class="gros">' + fcfa(prix) + '</div>'
+    + '<div class="kv"><span>Coûts</span><span>' + fcfa(cout) + '</span></div><div class="kv"><span>Commission</span><span>' + fcfa(com) + '</span></div><div class="kv"><span>Impôt</span><span>' + fcfa(imp) + '</span></div>'
+    + '<div class="kv" style="font-weight:700"><span style="color:#fff">Bénéfice net</span><span>' + fcfa(net) + '</span></div>'
+    + '<div class="kv" style="font-weight:700"><span style="color:#fff">Marge nette réelle</span><span>' + marge + ' % (visée ' + Number(dv.MargeVisee) + ' %)</span></div></div>';
+}
+function devisCourant() { return etat.affaire.devis.NumeroDevis; }
+function rafraichirProforma() { ECRANS.proforma({ numero: numeroCourant() }); }
+function creerProforma() { appel('creerDevis', { numero: numeroCourant() }).then(() => rafraichirProforma()).catch(echec); }
+function ajouterLigne(ev) {
+  ev.preventDefault();
+  appel('ajouterLigneDevis', { devis: devisCourant(), designation: $('ld').value, quantite: $('lq').value, cout: $('lc').value }).then(() => rafraichirProforma()).catch(echec);
+}
+function modifierPrix(ligne, valeur) {
+  const prix = parseInt(String(valeur).replace(/\D/g, ''), 10);
+  if (isNaN(prix)) return;
+  appel('modifierPrixLigne', { devis: devisCourant(), ligne, prix }).then(() => rafraichirProforma()).catch(echec);
+}
+function changerTaux(t) { appel('changerTauxDevis', Object.assign({ devis: devisCourant() }, t)).then(() => rafraichirProforma()).catch(echec); }
+function pdfProforma() { appel('pdfProforma', { devis: devisCourant() }).then((r) => { window.open(r.url, '_blank'); }).catch(echec); }
+function envoyerProforma() {
+  if (!confirm('Envoyer la proforma par mail au client ?')) return;
+  appel('envoyerProforma', { devis: devisCourant() }).then((a) => toast('Proforma envoyée à ' + a)).catch(echec);
+}
+function validerProforma() { appel('validerDevis', { devis: devisCourant() }).then(() => { toast('Proforma validée'); rafraichirProforma(); }).catch(echec); }
+
+// ---------- Véhicules ----------
+ECRANS.vehicules = function () {
+  appel('ecranVehicules').then((liste) => {
+    rendre('<div class="hero court"><div class="orb a"></div><h1>Véhicules</h1><p style="margin:4px 0 0;color:#C7D2FE;font-size:13px">Je prends / je dépose, avec photo du compteur</p></div><div class="feuille">'
+      + (liste.length ? liste.map((v) => '<button class="item" onclick="aller(\'vehicule\',{immatriculation:\'' + esc(v.immatriculation) + '\'})"><span class="ico ' + (v.sorti ? 'jaune' : 'vert') + '">' + svg('auto', 22, '#fff') + '</span>'
+        + '<span class="txt"><b>' + esc([v.marque, v.modele].filter(Boolean).join(' ') || v.immatriculation) + '</b><small>' + esc(v.immatriculation) + (v.dernierKm != null ? ' · ' + v.dernierKm.toLocaleString('fr-FR') + ' km' : '') + '</small></span>'
+        + '<span class="pastille ' + (v.sorti ? 'p-moyenne' : 'p-ok') + '">' + (v.sorti ? 'Pris par ' + esc(v.conducteur) : 'Disponible') + '</span></button>').join('')
+        : '<div class="vide">Aucun véhicule enregistré. Ajoute-les dans la feuille Vehicules.</div>') + '</div>', 'vehicules');
+    etat.vehicules = liste;
+  }).catch(echec);
+};
+ECRANS.vehicule = function (p) {
+  const v = (etat.vehicules || []).filter((x) => x.immatriculation === p.immatriculation)[0] || { immatriculation: p.immatriculation };
+  etat.photo = null;
+  const depot = !!v.sorti;
+  rendre(entete(depot ? 'Je dépose' : 'Je prends', esc([v.marque, v.modele].filter(Boolean).join(' ')) + ' · ' + esc(v.immatriculation))
+    + '<form class="section" onsubmit="mouvementVehicule(event,' + depot + ')"><div class="carte" style="gap:14px">'
+    + '<div class="photo" id="zphoto">' + svg('photo', 34, 'currentColor', 1.8) + '<b>Photo du compteur</b><small>obligatoire</small><input type="file" accept="image/*" capture="environment" aria-label="Photo du compteur" onchange="lirePhoto(this)"></div>'
+    + '<div class="champ"><label for="km">Kilométrage au compteur</label><input id="km" type="number" inputmode="numeric" required placeholder="' + (v.dernierKm != null ? 'Dernier relevé : ' + v.dernierKm : '') + '"></div>'
+    + (depot ? '<div class="champ"><label for="vi">Ville parcourue</label><input id="vi" placeholder="Ex. Sikensi"></div>' : '')
+    + (depot && v.dernierKm != null ? '<div class="kv"><span>Pris à</span><span>' + v.dernierKm.toLocaleString('fr-FR') + ' km par ' + esc(v.conducteur) + '</span></div>' : '')
+    + '<button class="bouton" type="submit">' + (depot ? 'Valider le dépôt' : 'Valider la prise') + '</button>'
+    + '<small style="color:#5A6585;text-align:center">Une anomalie de kilométrage alerte le référent véhicules.</small></div></form>', 'vehicules');
+};
+function lirePhoto(input) {
+  const f = input.files && input.files[0]; if (!f) return;
+  const img = new Image(), lecteur = new FileReader();
+  lecteur.onload = () => {
+    img.onload = () => {
+      const max = 1280, r = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const url = c.toDataURL('image/jpeg', 0.8); etat.photo = url.split(',')[1];
+      const z = $('zphoto'); const apercu = document.createElement('img'); apercu.src = url; apercu.alt = 'Photo du compteur'; z.appendChild(apercu);
+    };
+    img.src = lecteur.result;
+  };
+  lecteur.readAsDataURL(f);
+}
+function mouvementVehicule(ev, depot) {
+  ev.preventDefault();
+  if (!etat.photo) { toast('Prends la photo du compteur'); return; }
+  const imm = etat.courant.params.immatriculation;
+  const args = { immatriculation: imm, kilometrage: $('km').value, photo: etat.photo, ville: depot ? $('vi').value : '' };
+  appel(depot ? 'deposerVehicule' : 'prendreVehicule', args).then((km) => {
+    toast(depot ? (km != null ? km + ' km parcourus, dépôt enregistré' : 'Dépôt enregistré') : 'Prise enregistrée');
+    racine('vehicules');
+  }).catch(echec);
+}
+
+// ---------- Matériel ----------
+ECRANS.materiel = function () {
+  appel('ecranMateriel').then((d) => {
+    etat.materiel = d;
+    const outilsDispo = d.outils.filter((o) => o.statut !== 'Sorti'), outilsSortis = d.outils.filter((o) => o.statut === 'Sorti');
+    rendre('<div class="hero court"><div class="orb a"></div><h1>Matériel et outils</h1><p style="margin:4px 0 0;color:#C7D2FE;font-size:13px">' + d.nonRendus.length + ' outil(s) non rendu(s)</p></div><div class="feuille">'
+      + '<form class="carte" onsubmit="mouvementOutil(event)"><b>Outil : je prends / je rends</b>'
+      + '<select id="mo" aria-label="Outil" required><option value="">Choisir l\'outil…</option>'
+      + (outilsDispo.length ? '<optgroup label="Disponibles (je prends)">' + outilsDispo.map((o) => '<option value="P|' + esc(o.outil) + '">' + esc(o.outil) + '</option>').join('') + '</optgroup>' : '')
+      + (outilsSortis.length ? '<optgroup label="Sortis (je rends)">' + outilsSortis.map((o) => '<option value="R|' + esc(o.outil) + '">' + esc(o.outil) + '</option>').join('') + '</optgroup>' : '')
+      + '</select><input id="ml" placeholder="Où ? (site, agence, bureau)" aria-label="Lieu"><button class="bouton" type="submit">Valider</button></form>'
+      + '<form class="carte" onsubmit="sortieMateriel(event)"><b>Matériel : je sors pour une affaire</b>'
+      + '<select id="mm" aria-label="Matériel" required><option value="">Choisir le matériel…</option>' + d.materiel.map((m) => '<option value="' + esc(m.materiel) + '">' + esc(m.materiel) + ' (stock ' + esc(m.quantite) + ')</option>').join('') + '</select>'
+      + '<div class="deux"><input id="ma" placeholder="N° affaire (AFF-…)" aria-label="Numéro d\'affaire" required><input id="mq" type="number" inputmode="decimal" step="any" placeholder="Quantité" aria-label="Quantité" required></div>'
+      + '<button class="bouton second" type="submit">Sortir du stock</button></form>'
+      + (d.sortiesEnCours.length ? '<h2>Sorties à clôturer</h2>' + d.sortiesEnCours.map((m, i) => '<form class="carte" onsubmit="retourMateriel(event,' + i + ')"><b>' + esc(m.Materiel) + ' · ' + esc(m.NumeroAffaire) + '</b><small style="color:#5A6585">Sorti ' + esc(m.QuantiteSortie) + ' par ' + esc(m.Agent) + '</small>'
+        + '<div class="deux"><input id="rp' + i + '" type="number" inputmode="decimal" step="any" placeholder="Posé" aria-label="Quantité posée" required><input id="rr' + i + '" type="number" inputmode="decimal" step="any" placeholder="Rapporté" aria-label="Quantité rapportée" required></div><button class="bouton second" type="submit">Déclarer</button></form>').join('') : '')
+      + '<h2>Outils non rendus · ' + d.nonRendus.length + '</h2>'
+      + (d.nonRendus.length ? d.nonRendus.map((o) => '<div class="carte"><div class="ligne"><b>' + esc(o.outil) + '</b><span class="pastille ' + (o.joursDeRetard >= 2 ? 'p-alerte' : 'p-moyenne') + '">' + o.joursDeRetard + ' jour' + (o.joursDeRetard > 1 ? 's' : '') + '</span></div><small style="color:#5A6585">Pris par <b style="color:#0F1733">' + esc(o.prisPar) + '</b> le ' + dateCourte(o.depuis) + ' · ' + esc(o.lieuDeclare) + '</small></div>').join('') : '<div class="vide">Tout est rendu.</div>')
+      + (d.ecarts.length ? '<h2>Écarts matériel · ' + d.ecarts.length + '</h2>' + d.ecarts.map((m) => '<div class="carte"><b>' + esc(m.Materiel) + ' : ' + (Number(m.QuantiteSortie) - Number(m.QuantitePosee) - Number(m.QuantiteRapportee)) + ' manquant(s)</b><small style="color:#5A6585">Sorti ' + esc(m.QuantiteSortie) + ' · posé ' + esc(m.QuantitePosee) + ' · rapporté ' + esc(m.QuantiteRapportee) + ' · ' + esc(m.NumeroAffaire) + ' · ' + esc(m.Agent) + '</small></div>').join('') : '')
+      + '</div>', voitFinances() ? null : 'materiel');
+  }).catch(echec);
+};
+function mouvementOutil(ev) {
+  ev.preventDefault();
+  const v = $('mo').value; if (!v) return;
+  const prise = v[0] === 'P', outil = v.slice(2);
+  appel(prise ? 'prendreOutil' : 'rendreOutil', { outil, lieu: $('ml').value }).then(() => { toast(prise ? 'Outil pris : ' + outil : 'Outil rendu : ' + outil); ECRANS.materiel(); }).catch(echec);
+}
+function sortieMateriel(ev) {
+  ev.preventDefault();
+  appel('sortirMateriel', { materiel: $('mm').value, numero: $('ma').value.trim(), quantite: $('mq').value }).then(() => { toast('Sortie enregistrée'); ECRANS.materiel(); }).catch(echec);
+}
+function retourMateriel(ev, i) {
+  ev.preventDefault();
+  const m = etat.materiel.sortiesEnCours[i];
+  appel('declarerRetourMateriel', { materiel: m.Materiel, numero: m.NumeroAffaire, posee: $('rp' + i).value, rapportee: $('rr' + i).value }).then(() => { toast('Retour déclaré'); ECRANS.materiel(); }).catch(echec);
+}
+
+// ---------- Argent ----------
+function periode(nom) {
+  const a = new Date(), debut = new Date(a);
+  if (nom === 'mois') debut.setDate(1);
+  else if (nom === 'trimestre') { debut.setMonth(Math.floor(a.getMonth() / 3) * 3); debut.setDate(1); }
+  else { debut.setMonth(0); debut.setDate(1); }
+  return { debut: debut.toISOString().slice(0, 10), fin: a.toISOString().slice(0, 10) };
+}
+ECRANS.argent = function (p) {
+  const nom = p.periode || 'trimestre', per = periode(nom);
+  appel('ecranArgent', per).then((d) => {
+    const t = d.total;
+    rendre('<div class="hero court"><div class="orb a"></div><div class="orb b"></div><h1>Argent</h1><div class="puces" style="margin-top:12px">'
+      + [['mois', 'Ce mois'], ['trimestre', 'Trimestre'], ['annee', 'Année']].map((x) => '<button class="puce ' + (x[0] === nom ? 'on' : '') + '" onclick="aller(\'argent\',{periode:\'' + x[0] + '\'},true)">' + x[1] + '</button>').join('') + '</div></div>'
+      + '<div class="feuille"><div class="resultat"><b style="font-size:13px;color:#DDE3FF">BÉNÉFICE NET DE L\'ENTREPRISE</b><div class="gros">' + fcfa(t.beneficeNetEntreprise) + '</div>'
+      + '<div class="kv"><span>Facturé</span><span>' + fcfa(t.facture) + '</span></div><div class="kv"><span>Encaissé</span><span>' + fcfa(t.encaisse) + '</span></div><div class="kv"><span>Dépenses</span><span>' + fcfa(t.depenses) + '</span></div></div>'
+      + '<h2>Par client</h2>'
+      + (d.parClient.length ? d.parClient.map((b) => '<div class="item"><span class="ico ' + ((b.margeNettePourcent || 0) < 25 ? 'rouge' : 'vert') + '">' + svg('courbe', 22, '#fff') + '</span><span class="txt"><b>' + esc(b.client) + '</b><small>' + b.affaires.length + ' affaire(s) · dépenses ' + fcfa(b.totalDepenses) + '</small></span>'
+        + '<span class="pastille ' + ((b.margeNettePourcent || 0) < 25 ? 'p-alerte' : 'p-ok') + '">' + (b.margeNettePourcent != null ? b.margeNettePourcent + ' %' : '–') + '</span></div>').join('') : '<div class="vide">Aucune affaire sur la période.</div>')
+      + '<div class="item"><span class="ico jaune">' + svg('boite', 22, '#fff') + '</span><span class="txt"><b>Frais généraux (hors marché)</b><small>loyer, carburant bureau, divers</small></span><b>' + fcfa(d.depenses.parAffaire['Hors marché'] || 0) + '</b></div>'
+      + '</div>', 'argent');
+  }).catch(echec);
+};
+
+// ---------- Point de situation ----------
+ECRANS.point = function (p) {
+  appel('listeClients').then((clients) => {
+    const client = p.client || (clients[0] && clients[0].nom);
+    if (!client) { rendre(entete('Point de situation') + '<div class="section"><div class="vide">Aucun client pour l\'instant.</div></div>', null); return; }
+    appel('pointDeSituation', { client }).then((pt) => {
+      etat.point = client;
+      const lieu = (a) => esc(a.titre) + (a.site ? ' <span style="color:#5A6585">(' + esc(a.site) + ')</span>' : '');
+      const bloc = (titre, elements, rendu, alerte) => '<div class="carte"' + (alerte && elements.length ? ' style="border:1px solid #FECDD3"' : '') + '><div class="ligne"><b>' + titre + '</b><b>' + elements.length + '</b></div>'
+        + (elements.length ? elements.map((a) => '<div class="kv"><span style="color:#0F1733">' + lieu(a) + '</span><span style="white-space:nowrap;font-weight:600">' + rendu(a) + '</span></div>').join('') : '<small style="color:#5A6585">Aucun.</small>') + '</div>';
+      rendre(entete('Point de situation', 'Généré depuis les affaires · au ' + new Date().toLocaleDateString('fr-FR'))
+        + '<div class="section"><div class="puces">' + clients.map((c) => '<button class="puce ' + (c.nom === client ? 'on' : '') + '" onclick="aller(\'point\',{client:\'' + esc(c.nom).replace(/&#39;/g, "\\'") + '\'},true)">' + esc(c.nom) + '</button>').join('') + '</div>'
+        + bloc('1. Problèmes signalés', pt.problemesSignales, (a) => esc(a.statut))
+        + bloc('2. Actions réalisées et avancement', pt.actionsRealisees, (a) => a.avancement + ' %')
+        + bloc('3. Difficultés en attente', pt.difficultes, (a) => esc(a.blocage), true)
+        + bloc('4. Actions restantes et délais', pt.actionsRestantes, (a) => esc(a.prochaineAction || 'à finaliser') + ' · ' + (a.delaiPrevu ? dateCourte(a.delaiPrevu) : 'à définir'))
+        + '<div class="deux"><button class="bouton second" onclick="pdfPoint()">PDF</button>' + (estChef() ? '<button class="bouton" onclick="envoyerPoint()">Répondre par mail</button>' : '') + '</div></div>', null);
+    }).catch(echec);
+  }).catch(echec);
+};
+function pdfPoint() { appel('pdfPointDeSituation', { client: etat.point }).then((url) => window.open(url, '_blank')).catch(echec); }
+function envoyerPoint() {
+  if (!confirm('Envoyer le point de situation par mail à ' + etat.point + ' ?')) return;
+  appel('envoyerPointDeSituation', { client: etat.point }).then((a) => toast('Envoyé à ' + a)).catch(echec);
+}
+
+// ---------- Compte ----------
+ECRANS.compte = function () {
+  rendre(entete(MOI.nom, esc(MOI.email) + ' · ' + esc(MOI.role))
+    + '<div class="section"><form class="carte" onsubmit="changerCode(event)"><b>Changer mon code</b><input id="nouveau" type="password" inputmode="numeric" pattern="[0-9]{4,6}" placeholder="4 à 6 chiffres" aria-label="Nouveau code" required><button class="bouton second" type="submit">Enregistrer</button></form>'
+    + '<button class="bouton second" onclick="seDeconnecter()">Se déconnecter</button></div>', null);
+};
+function changerCode(ev) { ev.preventDefault(); appel('changerMonCode', { code: $('nouveau').value }).then(() => { toast('Code changé'); revenir(); }).catch(echec); }
+
+if (JETON) racine('accueil'); else ecranConnexion();
+</script>
+</body>
+</html>
