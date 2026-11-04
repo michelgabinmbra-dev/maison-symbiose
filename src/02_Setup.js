@@ -34,7 +34,7 @@ function initialiserBaseDeDonnees() {
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.DEVIS, [
     'NumeroDevis', 'NumeroAffaire', 'CoutEstime', 'MargeVisee', 'PrixPropose',
-    'Statut', 'ValidePar', 'DateValidation',
+    'Statut', 'ValidePar', 'DateValidation', 'TauxCommission', 'TauxImpot',
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.FACTURES, [
     'NumeroFacture', 'NumeroAffaire', 'Montant', 'DateEmission', 'DelaiPaiementJours',

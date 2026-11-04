@@ -1,7 +1,8 @@
 /**
  * Dépenses et bénéfice : chaque dépense est rattachée à une affaire (un marché), ou laissée sans
- * affaire pour les frais généraux de l'entreprise. Le bénéfice d'un marché = montant facturé
- * (ou, à défaut de facture, prix du devis validé) - dépenses du marché. Pour un contrat de
+ * affaire pour les frais généraux de l'entreprise. Bénéfice net d'un marché = montant facturé
+ * (ou, à défaut de facture, prix du devis validé) - dépenses - commission - impôt ; la marge
+ * nette = ce bénéfice ÷ montant du marché, à comparer à la marge visée du devis. Pour un contrat de
  * maintenance trimestriel, on additionne toutes les affaires du client sur la période.
  */
 
@@ -106,30 +107,48 @@ function calculerBilan(numerosAffaires) {
     .filter((d) => numeros.has(d.NumeroAffaire) && d.Statut === STATUTS_DEVIS.VALIDE);
 
   // Une affaire facturée compte pour sa facture ; sinon pour son devis validé (recette prévue).
+  // Commission et impôt (en % du marché) viennent du devis validé, sinon des taux par défaut.
   let recettes = 0;
   let recettesPrevues = 0;
+  let commissions = 0;
+  let impots = 0;
   numeros.forEach((numero) => {
+    const devis = devisValides.filter((d) => d.NumeroAffaire === numero);
+    const dernierDevis = devis[devis.length - 1];
+    const tauxCommission = dernierDevis && dernierDevis.TauxCommission !== '' && dernierDevis.TauxCommission != null
+      ? Number(dernierDevis.TauxCommission) : TAUX_COMMISSION_DEFAUT;
+    const tauxImpot = dernierDevis && dernierDevis.TauxImpot !== '' && dernierDevis.TauxImpot != null
+      ? Number(dernierDevis.TauxImpot) : TAUX_IMPOT_DEFAUT;
+
     const facturesAffaire = factures.filter((f) => f.NumeroAffaire === numero);
+    let montantMarche;
     if (facturesAffaire.length > 0) {
-      recettes += facturesAffaire.reduce((somme, f) => somme + (Number(f.Montant) || 0), 0);
+      montantMarche = facturesAffaire.reduce((somme, f) => somme + (Number(f.Montant) || 0), 0);
+      recettes += montantMarche;
     } else {
-      recettesPrevues += devisValides
-        .filter((d) => d.NumeroAffaire === numero)
-        .reduce((somme, d) => somme + (Number(d.PrixPropose) || 0), 0);
+      montantMarche = devis.reduce((somme, d) => somme + (Number(d.PrixPropose) || 0), 0);
+      recettesPrevues += montantMarche;
     }
+    commissions += montantMarche * tauxCommission / 100;
+    impots += montantMarche * tauxImpot / 100;
   });
 
   const encaisse = factures
     .filter((f) => f.StatutPaiement === 'Payée')
     .reduce((somme, f) => somme + (Number(f.Montant) || 0), 0);
 
+  const montantTotal = recettes + recettesPrevues;
+  const beneficeNet = montantTotal - totalDepenses - commissions - impots;
   return {
     recettesFacturees: recettes,
     recettesPrevues,
     encaisse,
     totalDepenses,
     depensesParCategorie,
-    benefice: recettes + recettesPrevues - totalDepenses,
+    commissions: Math.round(commissions),
+    impots: Math.round(impots),
+    beneficeNet: Math.round(beneficeNet),
+    margeNettePourcent: montantTotal > 0 ? Math.round(beneficeNet / montantTotal * 1000) / 10 : null,
   };
 }
 

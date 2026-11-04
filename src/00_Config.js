@@ -50,4 +50,9 @@ const PRIORITES = {
 const PROP_ID_CLASSEUR = 'ID_CLASSEUR_DONNEES';
 
 const DELAI_PAIEMENT_JOURS_DEFAUT = 15;
+
+// Taux par défaut d'une proforma, en % du montant du marché ; modifiables sur chaque devis.
+const TAUX_COMMISSION_DEFAUT = 10;
+const TAUX_IMPOT_DEFAUT = 10;
+const MARGE_NETTE_DEFAUT = 30;
 const DELAI_ALERTE_RETOUR_OUTIL_JOURS = 1; // alerte à Jean si non rendu à J+1

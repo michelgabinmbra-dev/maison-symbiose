@@ -1,7 +1,9 @@
 /**
  * Devis : coûts, écarts, marge (voir cahier des charges, section "Devis").
- * Pas de seuil de marge fixe : Michel donne la marge visée en POURCENTAGE du coût (confirmé
- * le 04/11/2026), l'outil calcule le prix à proposer : 20 => coût + 20 %.
+ * La marge visée est le bénéfice NET (après commission et impôt) divisé par le montant du
+ * marché, réglable par devis (en général 30-35 %). Commission et impôt sont aussi des % du
+ * marché (10 % par défaut chacun, modifiables par devis). D'où :
+ *   prix = coût / (1 - marge - commission - impôt).
  */
 
 const STATUTS_DEVIS = {
@@ -11,8 +13,11 @@ const STATUTS_DEVIS = {
   ABANDONNE: 'Abandonné',
 };
 
-/** Crée un devis sur une affaire existante et calcule le prix proposé. Renvoie son numéro. */
-function creerDevis(numeroAffaire, coutEstime, margeVisee) {
+/**
+ * Crée un devis sur une affaire existante et calcule le prix proposé. Renvoie son numéro.
+ * margeVisee, tauxCommission, tauxImpot en % du marché ; les deux derniers sont optionnels.
+ */
+function creerDevis(numeroAffaire, coutEstime, margeVisee, tauxCommission, tauxImpot) {
   const utilisateur = exigerRole(Object.values(ROLES));
   trouverAffaire(numeroAffaire); // lève une erreur si l'affaire n'existe pas
 
@@ -20,22 +25,43 @@ function creerDevis(numeroAffaire, coutEstime, margeVisee) {
     throw new Error('coutEstime et margeVisee sont obligatoires.');
   }
 
-  const prixPropose = ventilerPrix(coutEstime, margeVisee);
+  const commission = tauxCommission == null || tauxCommission === '' ? TAUX_COMMISSION_DEFAUT : Number(tauxCommission);
+  const impot = tauxImpot == null || tauxImpot === '' ? TAUX_IMPOT_DEFAUT : Number(tauxImpot);
+  const prixPropose = ventilerPrix(coutEstime, margeVisee, commission, impot);
 
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.DEVIS);
   const numeroDevis = genererNumero('DEV', feuille, 'NumeroDevis');
   feuille.appendRow([
     numeroDevis, numeroAffaire, coutEstime, margeVisee, prixPropose,
-    STATUTS_DEVIS.EN_ATTENTE, '', '',
+    STATUTS_DEVIS.EN_ATTENTE, '', '', commission, impot,
   ]);
 
   changerStatutAffaire(numeroAffaire, STATUTS_AFFAIRE.NOUVELLE_DEMANDE);
   return numeroDevis;
 }
 
-/** Prix à proposer = coût estimé + marge visée (en % du coût), arrondi au franc. */
-function ventilerPrix(coutEstime, margeViseePourcent) {
-  return Math.round(Number(coutEstime) * (1 + Number(margeViseePourcent) / 100));
+/** Prix tel qu'après commission, impôt et coûts, il reste exactement la marge nette visée. */
+function ventilerPrix(coutEstime, margeVisee, tauxCommission, tauxImpot) {
+  const partRestante = 1 - (Number(margeVisee) + Number(tauxCommission) + Number(tauxImpot)) / 100;
+  if (partRestante <= 0) {
+    throw new Error('Marge + commission + impôt doivent rester sous 100 %.');
+  }
+  return Math.round(Number(coutEstime) / partRestante);
+}
+
+/** Détail d'un prix : commission, impôt et bénéfice net, pour l'écran proforma. */
+function detaillerPrix(coutEstime, margeVisee, tauxCommission, tauxImpot) {
+  const commission = tauxCommission == null ? TAUX_COMMISSION_DEFAUT : Number(tauxCommission);
+  const impot = tauxImpot == null ? TAUX_IMPOT_DEFAUT : Number(tauxImpot);
+  const prix = ventilerPrix(coutEstime, margeVisee, commission, impot);
+  const montantCommission = Math.round(prix * commission / 100);
+  const montantImpot = Math.round(prix * impot / 100);
+  return {
+    prix,
+    commission: montantCommission,
+    impot: montantImpot,
+    beneficeNet: prix - Number(coutEstime) - montantCommission - montantImpot,
+  };
 }
 
 /** Valide un devis (DG ou DGA) : l'affaire peut passer en exécution. */
