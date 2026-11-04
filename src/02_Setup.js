@@ -25,7 +25,7 @@ function initialiserBaseDeDonnees() {
     feuilleUtilisateurs.appendRow(['michelgabinmbra@gmail.com', 'Michel', ROLES.DG, true]);
   }
 
-  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.CLIENTS, ['NomClient', 'TypeContrat', 'ContactEmail']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.CLIENTS, ['NomClient', 'TypeContrat', 'ContactEmail', 'CodeDocument']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.SITES, ['NomSite', 'NomClient', 'Ville']);
 
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.AFFAIRES, [
@@ -35,7 +35,7 @@ function initialiserBaseDeDonnees() {
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.DEVIS, [
     'NumeroDevis', 'NumeroAffaire', 'CoutEstime', 'MargeVisee', 'PrixPropose',
-    'Statut', 'ValidePar', 'DateValidation', 'TauxCommission', 'TauxImpot', 'MargeReelle',
+    'Statut', 'ValidePar', 'DateValidation', 'TauxCommission', 'TauxImpot', 'MargeReelle', 'NumeroDocument',
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.LIGNES_DEVIS, [
     'NumeroDevis', 'NumeroLigne', 'Designation', 'Quantite', 'CoutUnitaire', 'PrixUnitaire',

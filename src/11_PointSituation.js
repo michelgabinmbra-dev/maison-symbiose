@@ -48,23 +48,26 @@ function htmlPointDeSituation(point) {
     ? '<ul>' + elements.map((a) => '<li>' + rendu(a) + '</li>').join('') + '</ul>'
     : '<p><i>Aucun.</i></p>';
 
-  return '<div style="font-family:Arial,sans-serif;font-size:13px;color:#0F1733">'
-    + '<h2 style="color:#0B1442">Point de situation ' + echapper(point.client) + ' au ' + date(point.date) + '</h2>'
-    + '<h3>1. Problèmes signalés à ce jour (' + point.problemesSignales.length + ')</h3>'
+  return '<p style="font-size:13px;margin-top:14px"><b>Client : ' + echapper(point.client) + '</b></p>'
+    + '<h3 style="color:#0E5C8C">1. Problèmes signalés à ce jour (' + point.problemesSignales.length + ')</h3>'
     + liste(point.problemesSignales, lieu)
-    + '<h3>2. Actions réalisées et niveau d\'avancement</h3>'
+    + '<h3 style="color:#0E5C8C">2. Actions réalisées et niveau d\'avancement</h3>'
     + liste(point.actionsRealisees, (a) => lieu(a) + ' : <b>' + a.avancement + ' %</b> (' + echapper(a.statut) + ')')
-    + '<h3>3. Difficultés en attente de résolution</h3>'
+    + '<h3 style="color:#0E5C8C">3. Difficultés en attente de résolution</h3>'
     + liste(point.difficultes, (a) => lieu(a) + ' : ' + echapper(a.blocage))
-    + '<h3>4. Actions restantes et délais prévisionnels</h3>'
-    + liste(point.actionsRestantes, (a) => lieu(a) + ' : ' + echapper(a.prochaineAction || 'à finaliser') + ' (prévu le ' + date(a.delaiPrevu) + ')')
-    + '<p>Cordialement,<br>Symbiose</p></div>';
+    + '<h3 style="color:#0E5C8C">4. Actions restantes et délais prévisionnels</h3>'
+    + liste(point.actionsRestantes, (a) => lieu(a) + ' : ' + echapper(a.prochaineAction || 'à finaliser') + ' (prévu le ' + date(a.delaiPrevu) + ')');
+}
+
+/** Version du point de situation sur papier en-tête, pour le PDF. */
+function documentPointDeSituation(point) {
+  return cadreDocument('POINT DE SITUATION', '', htmlPointDeSituation(point));
 }
 
 /** Crée le PDF du point de situation dans Drive et renvoie son URL. */
 function pdfPointDeSituation(client) {
   const point = pointDeSituation(client);
-  const blob = Utilities.newBlob(htmlPointDeSituation(point), 'text/html', 'point.html')
+  const blob = Utilities.newBlob(documentPointDeSituation(point), 'text/html', 'point.html')
     .getAs('application/pdf')
     .setName('Point de situation ' + client + ' ' + Utilities.formatDate(new Date(), 'Africa/Abidjan', 'yyyy-MM-dd') + '.pdf');
   return obtenirOuCreerDossier(NOM_DOSSIER_DOCUMENTS).createFile(blob).getUrl();
@@ -78,8 +81,9 @@ function envoyerPointDeSituation(client, destinataires) {
   if (!a) {
     throw new Error("Aucune adresse mail pour " + client + " : renseigne ContactEmail dans la feuille Clients.");
   }
-  const html = htmlPointDeSituation(point);
-  const pdf = Utilities.newBlob(html, 'text/html', 'point.html').getAs('application/pdf')
+  const html = '<p>Bonjour,</p><p>Veuillez trouver ci-dessous et en pièce jointe le point de situation de nos interventions.</p>'
+    + htmlPointDeSituation(point) + '<p>Cordialement,<br>Symbiose</p>';
+  const pdf = Utilities.newBlob(documentPointDeSituation(point), 'text/html', 'point.html').getAs('application/pdf')
     .setName('Point de situation ' + client + '.pdf');
   MailApp.sendEmail({
     to: a,
