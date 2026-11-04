@@ -37,6 +37,10 @@ const ACTIONS_API = {
   envoyerProforma: (a) => envoyerProforma(a.devis),
   pdfPointDeSituation: (a) => pdfPointDeSituation(a.client),
   envoyerPointDeSituation: (a) => envoyerPointDeSituation(a.client),
+  // Rapports d'intervention
+  creerRapport: (a) => creerRapport(a.numero, a.rapport),
+  pdfRapport: (a) => pdfRapport(a.rapport),
+  envoyerRapport: (a) => envoyerRapport(a.rapport),
   // Véhicules, matériel
   prendreVehicule: (a) => prendreVehicule(a.immatriculation, '', Number(a.kilometrage), a.photo),
   deposerVehicule: (a) => deposerVehicule(a.immatriculation, '', Number(a.kilometrage), a.ville, a.photo),
@@ -126,6 +130,9 @@ function ecranAffaire(numero) {
     voitFinances,
     statuts: Object.values(STATUTS_AFFAIRE),
     categories: Object.values(CATEGORIES_DEPENSE),
+    rapports: rapportsDeLAffaire(numero),
+    domaines: DOMAINES_RAPPORT,
+    etatsControle: ETATS_CONTROLE,
   };
 }
 

@@ -297,6 +297,10 @@ ECRANS.affaire = function (p) {
       + (d.peutGerer ? '<div class="puces">' + ['Élevée', 'Moyenne', 'Faible'].map((pr) => '<button class="puce ' + (a.Priorite === pr ? 'on' : '') + '" onclick="definirPriorite(\'' + pr + '\')">' + pr + '</button>').join('') + '</div>' : '')
       + '</div>'
       + (a.Description ? '<div class="carte"><b style="font-size:13px;color:#5A6585">DEMANDE</b><div style="font-size:14px;white-space:pre-line">' + esc(String(a.Description).slice(0, 600)) + '</div></div>' : '')
+      + '<div class="carte"><div class="ligne"><b style="font-size:13px;color:#5A6585">RAPPORTS D\'INTERVENTION</b><span style="font-size:13px;color:#5A6585">' + d.rapports.length + '</span></div>'
+      + d.rapports.map((r) => '<div class="kv" style="align-items:center"><span><b>' + esc(r.numero) + '</b> · ' + dateCourte(r.date) + ' · ' + esc(r.technicien) + (r.nombrePhotos ? ' · ' + r.nombrePhotos + ' photo' + (r.nombrePhotos > 1 ? 's' : '') : '') + '<br><small style="color:#5A6585">' + esc(String(r.constat).slice(0, 90)) + '</small></span>'
+        + '<span style="display:flex;gap:6px"><button class="puce" onclick="pdfRapport(\'' + esc(r.numero) + '\')">PDF</button>' + (d.peutGerer ? '<button class="puce" onclick="envoyerRapport(\'' + esc(r.numero) + '\')">Envoyer</button>' : '') + '</span></div>').join('')
+      + '<button class="bouton second" onclick="aller(\'rapport\',{numero:\'' + esc(a.NumeroAffaire) + '\'})">+ Nouveau rapport</button></div>'
       + '<form class="carte" onsubmit="enregistrerSuivi(event)"><b style="font-size:13px;color:#5A6585">SUIVI (alimente le point de situation)</b>'
       + '<div class="champ"><label for="av">Avancement : <span id="avv">' + (Number(a.Avancement) || 0) + '</span> %</label><input id="av" type="range" min="0" max="100" step="10" value="' + (Number(a.Avancement) || 0) + '" oninput="$(\'avv\').textContent=this.value"></div>'
       + '<div class="champ"><label for="pa">Prochaine action</label><input id="pa" value="' + esc(a.ProchaineAction) + '" placeholder="Ex. remplacer le compresseur"></div>'
@@ -340,6 +344,83 @@ function ajouterDepense(ev) {
   ev.preventDefault();
   appel('enregistrerDepense', { numero: numeroCourant(), categorie: $('dc').value, montant: $('dm').value, description: $('dd').value })
     .then(() => { toast('Dépense ajoutée'); rafraichirAffaire(); }).catch(echec);
+}
+
+function pdfRapport(numero) { appel('pdfRapport', { rapport: numero }).then((url) => window.open(url, '_blank')).catch(echec); }
+function envoyerRapport(numero) {
+  if (!confirm('Envoyer le rapport ' + numero + ' au client ?')) return;
+  appel('envoyerRapport', { rapport: numero }).then((a) => toast('Rapport envoyé à ' + a)).catch(echec);
+}
+
+// ---------- Rapport d'intervention ----------
+ECRANS.rapport = function (p) {
+  const d = etat.affaire, a = d.affaire;
+  etat.photosRapport = [];
+  rendre(entete('Rapport d\'intervention', esc(a.NumeroAffaire) + ' · ' + esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : ''))
+    + '<form class="section" onsubmit="enregistrerRapport(event)"><div class="carte" style="gap:14px">'
+    + '<div class="champ"><label>Domaine</label><div class="puces" id="rdom">' + d.domaines.map((t, i) => '<button type="button" class="puce ' + (i ? '' : 'on') + '" onclick="choisir(\'rdom\',this)">' + esc(t) + '</button>').join('') + '</div></div>'
+    + '<div class="champ"><label for="rloc">Localisation</label><input id="rloc" placeholder="Ex. salle serveur, 1er étage"></div>'
+    + '<div class="champ"><label for="rcon">Constat</label><textarea id="rcon" required placeholder="Ce que tu as trouvé en arrivant"></textarea></div>'
+    + '<div class="champ"><label for="rcau">Cause probable</label><textarea id="rcau"></textarea></div>'
+    + '</div><div class="carte" style="gap:10px"><b style="font-size:13px;color:#5A6585">ÉLÉMENTS CONTRÔLÉS</b><div id="rctl"></div>'
+    + '<button type="button" class="bouton second" onclick="ajouterControle()">+ Ajouter un élément</button></div>'
+    + '<div class="carte" style="gap:14px">'
+    + '<div class="champ"><label for="rtra">Travaux réalisés</label><textarea id="rtra"></textarea></div>'
+    + '<div class="champ"><label>Photos (6 au plus)</label><div id="rphotos" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>'
+    + '<div class="photo" style="height:90px">' + svg('photo', 28, 'currentColor', 1.8) + '<b>Ajouter des photos</b><input type="file" accept="image/*" multiple aria-label="Ajouter des photos" onchange="ajouterPhotosRapport(this)"></div></div>'
+    + '<div class="champ"><label for="rrec">Recommandation</label><textarea id="rrec"></textarea></div>'
+    + '<button class="bouton" type="submit" id="renv">Enregistrer le rapport</button></div></form>', 'affaires');
+  ajouterControle();
+};
+function ajouterControle() {
+  const etats = etat.affaire.etatsControle, i = $('rctl').children.length;
+  const div = document.createElement('div');
+  div.className = 'controle'; div.style.cssText = 'display:flex;flex-direction:column;gap:6px;padding:10px 0;border-bottom:1px solid #E6E9F2';
+  div.innerHTML = '<input class="cel" placeholder="Élément (ex. compresseur)" aria-label="Élément contrôlé">'
+    + '<div class="puces" id="ret' + i + '">' + etats.map((t, k) => '<button type="button" class="puce ' + (k ? '' : 'on') + '" onclick="choisir(\'ret' + i + '\',this)">' + esc(t) + '</button>').join('') + '</div>'
+    + '<input class="cobs" placeholder="Observation" aria-label="Observation">';
+  $('rctl').appendChild(div);
+}
+function reduireImage(fichier, max, qualite) {
+  return new Promise((ok, ko) => {
+    const lecteur = new FileReader(), img = new Image();
+    lecteur.onerror = ko; img.onerror = ko;
+    lecteur.onload = () => {
+      img.onload = () => {
+        const r = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        ok(c.toDataURL('image/jpeg', qualite));
+      };
+      img.src = lecteur.result;
+    };
+    lecteur.readAsDataURL(fichier);
+  });
+}
+function ajouterPhotosRapport(input) {
+  const fichiers = Array.from(input.files || []).slice(0, 6 - etat.photosRapport.length);
+  if (input.files.length > fichiers.length) toast('6 photos au plus');
+  Promise.all(fichiers.map((f) => reduireImage(f, 1024, 0.75))).then((urls) => {
+    etat.photosRapport = etat.photosRapport.concat(urls); input.value = ''; afficherPhotosRapport();
+  }).catch(() => toast('Photo illisible'));
+}
+function afficherPhotosRapport() {
+  $('rphotos').innerHTML = etat.photosRapport.map((u, i) => '<div style="position:relative"><img src="' + u + '" alt="Photo ' + (i + 1) + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px">'
+    + '<button type="button" aria-label="Retirer la photo" onclick="etat.photosRapport.splice(' + i + ',1);afficherPhotosRapport()" style="position:absolute;top:4px;right:4px;width:28px;height:28px;min-height:0;border-radius:50%;border:0;background:rgba(15,23,51,.7);color:#fff;font-size:16px">×</button></div>').join('');
+}
+function enregistrerRapport(ev) {
+  ev.preventDefault();
+  const controles = Array.from(document.querySelectorAll('#rctl .controle')).map((c, i) => ({
+    element: c.querySelector('.cel').value.trim(), etat: choix('ret' + i), observation: c.querySelector('.cobs').value.trim(),
+  })).filter((c) => c.element);
+  const rapport = {
+    domaine: choix('rdom'), localisation: $('rloc').value.trim(), constat: $('rcon').value.trim(), cause: $('rcau').value.trim(),
+    travaux: $('rtra').value.trim(), recommandation: $('rrec').value.trim(), controles,
+    photos: etat.photosRapport.map((u) => u.split(',')[1]),
+  };
+  $('renv').disabled = true; $('renv').textContent = 'Envoi en cours…';
+  appel('creerRapport', { numero: numeroCourant(), rapport }).then((n) => { toast('Rapport ' + n + ' enregistré'); revenir(); })
+    .catch((e) => { $('renv').disabled = false; $('renv').textContent = 'Enregistrer le rapport'; echec(e); });
 }
 
 // ---------- Nouvelle demande ----------

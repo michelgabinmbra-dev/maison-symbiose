@@ -41,6 +41,10 @@ function initialiserBaseDeDonnees() {
     'NumeroDevis', 'NumeroLigne', 'Designation', 'Quantite', 'CoutUnitaire', 'PrixUnitaire',
     'PrixModifieMain',
   ]);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.RAPPORTS, [
+    'NumeroRapport', 'NumeroAffaire', 'Technicien', 'Date', 'Domaine', 'Localisation', 'Constat',
+    'Cause', 'TravauxRealises', 'Recommandation', 'Controles', 'Photos', 'CreePar',
+  ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.FACTURES, [
     'NumeroFacture', 'NumeroAffaire', 'Montant', 'DateEmission', 'DelaiPaiementJours',
     'StatutPaiement', 'DateReception', 'DatePaiement',
