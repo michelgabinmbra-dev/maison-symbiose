@@ -164,6 +164,9 @@ try { JETON = localStorage.getItem('ms_jeton'); } catch (e) {}
 let MOI = null;
 try { MOI = JSON.parse(localStorage.getItem('ms_moi') || 'null'); } catch (e) {}
 const etat = { pile: [] };
+// Valeurs enregistrées dans la feuille → libellés affichés.
+const TYPES = ['Curatif', 'Préventif', 'Travaux', 'Sécurité'];
+const LIBELLES_TYPE = { 'Curatif': 'Maintenance curative (dépannage)', 'Préventif': 'Maintenance préventive', 'Travaux': 'Travaux', 'Sécurité': 'Sécurité' };
 
 function toast(message) {
   const t = $('toast'); t.textContent = message; t.style.display = 'block';
@@ -312,6 +315,8 @@ ECRANS.affaires = function (p) {
 };
 
 const ETAPES = [['Nouvelle demande', 'Demande'], ['Devis validé', 'Proforma'], ['En exécution', 'Bon reçu'], ['Facture émise', 'Facture'], ['Réception confirmée', 'Réception'], ['Payée', 'Payée']];
+const ETAPES_CONTRAT = [['Nouvelle demande', 'Demande'], ['En exécution', 'Intervention'], ['', 'Rapport'], ['Clôturée (contrat)', 'Clôturée']];
+function rangContrat(a, nbRapports) { return a.Statut === 'Clôturée (contrat)' ? 3 : nbRapports ? 2 : a.Statut === 'En exécution' ? 1 : 0; }
 function rangEtape(statut) {
   const ordre = ['Nouvelle demande', 'Devis à revoir', 'Devis validé', 'En exécution', 'Facture émise', 'Réception confirmée', 'Payée'];
   const r = ordre.indexOf(statut); return r <= 1 ? 0 : r - 1;
@@ -320,15 +325,19 @@ function rangEtape(statut) {
 ECRANS.affaire = function (p) {
   appel('ecranAffaire', { numero: p.numero }).then((d) => {
     const a = d.affaire; etat.affaire = d;
-    const rang = rangEtape(a.Statut);
+    const etapes = d.sousContrat ? ETAPES_CONTRAT : ETAPES;
+    const rang = d.sousContrat ? rangContrat(a, d.rapports.length) : rangEtape(a.Statut);
     const delai = a.DelaiPrevu ? new Date(a.DelaiPrevu).toISOString().slice(0, 10) : '';
-    let html = entete(a.Titre || a.TypeIntervention, esc(a.NumeroAffaire) + ' · ' + esc(a.TypeIntervention) + ' · ' + esc(a.Source) + '<br>' + esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : '') + (a.Agent ? ' · Agent : ' + esc(a.Agent) : ''))
+    let html = entete(a.Titre || a.TypeIntervention, esc(a.NumeroAffaire) + ' · ' + esc(LIBELLES_TYPE[a.TypeIntervention] || a.TypeIntervention) + ' · ' + esc(a.Source) + '<br>' + esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : '') + (a.Agent ? ' · Agent : ' + esc(a.Agent) : ''))
       + '<div class="section">'
       + '<div class="carte"><div class="ligne"><b style="font-size:13px;color:#5A6585">OÙ EN EST LE DOSSIER</b>' + pastillePriorite(a.Priorite) + '</div>'
-      + '<div class="etapes">' + ETAPES.map((e, i) => '<i class="' + (i <= rang ? 'on' : '') + '"></i>').join('') + '</div>'
-      + '<div class="etiquettes">' + ETAPES.map((e, i) => '<span' + (i === rang ? ' style="color:#0F1733;font-weight:700"' : '') + '>' + e[1] + '</span>').join('') + '</div>'
+      + '<div class="etapes"' + (d.sousContrat ? ' style="grid-template-columns:repeat(4,minmax(0,1fr))"' : '') + '>' + etapes.map((e, i) => '<i class="' + (i <= rang ? 'on' : '') + '"></i>').join('') + '</div>'
+      + '<div class="etiquettes"' + (d.sousContrat ? ' style="grid-template-columns:repeat(4,minmax(0,1fr))"' : '') + '>' + etapes.map((e, i) => '<span' + (i === rang ? ' style="color:#0F1733;font-weight:700"' : '') + '>' + e[1] + '</span>').join('') + '</div>'
       + '<div style="font-size:14px">Statut : <b>' + esc(a.Statut) + '</b></div>'
+      + (d.sousContrat ? '<div style="font-size:13px;background:#ECFDF5;color:#065F46;border-radius:12px;padding:10px 12px"><b>Couvert par le contrat de maintenance ' + esc(a.Client) + '</b> : rien à facturer. Intervention, rapport, puis clôture.</div>'
+        + (d.peutCloturer && a.Statut !== 'Clôturée (contrat)' ? '<button class="bouton" ' + (d.rapports.length ? '' : 'disabled title="Fais d\'abord le rapport" style="opacity:.5"') + ' onclick="cloturerContrat()">Clôturer le dossier' + (d.rapports.length ? '' : ' (après le rapport)') + '</button>' : '') : '')
       + (d.peutGerer || d.voitFinances ? '<select aria-label="Changer le statut" onchange="changerStatut(this.value)"><option value="">Changer le statut…</option>' + d.statuts.map((s) => '<option>' + esc(s) + '</option>').join('') + '</select>' : '')
+      + (d.peutGerer ? '<select aria-label="Type d\'intervention" onchange="definirType(this.value)">' + TYPES.map((t) => '<option value="' + t + '"' + ((a.TypeIntervention || 'Curatif') === t ? ' selected' : '') + '>' + LIBELLES_TYPE[t] + '</option>').join('') + '</select>' : '<p style="margin:0">Type : <b>' + esc(LIBELLES_TYPE[a.TypeIntervention] || a.TypeIntervention || '') + '</b></p>')
       + (d.peutGerer ? '<div class="puces">' + ['Élevée', 'Moyenne', 'Faible'].map((pr) => '<button class="puce ' + (a.Priorite === pr ? 'on' : '') + '" onclick="definirPriorite(\'' + pr + '\')">' + pr + '</button>').join('') + '</div>' : '')
       + '</div>'
       + (a.Description ? '<div class="carte"><b style="font-size:13px;color:#5A6585">DEMANDE</b><div style="font-size:14px;white-space:pre-line">' + esc(String(a.Description).slice(0, 600)) + '</div></div>' : '')
@@ -344,10 +353,12 @@ ECRANS.affaire = function (p) {
       + '<div class="champ"><label for="ag">Agent sur place</label><input id="ag" value="' + esc(a.Agent) + '"></div>'
       + '<button class="bouton second" type="submit">Enregistrer le suivi</button></form>';
     if (d.voitFinances) {
+      if (d.sousContrat && !d.devis) html += '<details class="carte"><summary style="font-weight:600;color:#2563EB;min-height:44px;display:flex;align-items:center">Pièces ou travaux hors contrat ? Faire une proforma</summary>';
       html += '<button class="item" onclick="aller(\'proforma\',{numero:\'' + esc(a.NumeroAffaire) + '\'})"><span class="ico violet">' + svg('liste', 22, '#fff') + '</span><span class="txt"><b>Proforma</b><small>'
         + (d.devis ? esc(d.devis.NumeroDevis) + ' · ' + fcfa(d.devis.PrixPropose) + ' · marge réelle ' + esc(d.devis.MargeReelle) + ' %' : 'À créer')
         + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>';
-    html += carteFacture(d);
+    if (d.sousContrat && !d.devis) html += '</details>';
+    if (!d.sousContrat || d.facture || d.devis) html += carteFacture(d);
     }
     const totalDep = d.depenses.reduce((s, x) => s + Number(x.Montant), 0);
     html += '<div class="carte"><div class="ligne"><b>Dépenses du marché</b><b>' + fcfa(totalDep) + '</b></div>'
@@ -370,6 +381,8 @@ ECRANS.affaire = function (p) {
 function numeroCourant() { return etat.affaire.affaire.NumeroAffaire; }
 function rafraichirAffaire() { ECRANS.affaire({ numero: numeroCourant() }); }
 function changerStatut(s) { if (!s) return; appel('changerStatut', { numero: numeroCourant(), statut: s }).then(() => { toast('Statut mis à jour'); rafraichirAffaire(); }).catch(echec); }
+function cloturerContrat() { appel('cloturerContrat', { numero: numeroCourant() }).then(() => { toast('Dossier clôturé'); rafraichirAffaire(); }).catch(echec); }
+function definirType(t) { appel('definirType', { numero: numeroCourant(), type: t }).then(() => { toast('Type : ' + LIBELLES_TYPE[t]); rafraichirAffaire(); }).catch(echec); }
 function definirPriorite(p) { appel('definirPriorite', { numero: numeroCourant(), priorite: p }).then(() => { toast('Priorité : ' + p); rafraichirAffaire(); }).catch(echec); }
 function enregistrerSuivi(ev) {
   ev.preventDefault();
@@ -725,14 +738,14 @@ ECRANS.nouvelle = function () {
       + '<div class="champ"><label for="ns">Site / agence</label><input id="ns" list="ls" placeholder="Ex. Sikensi"><datalist id="ls"></datalist></div>'
       + '<div class="champ"><label for="nt">Problème signalé</label><input id="nt" required placeholder="Ex. clim en panne, salle serveur"></div>'
       + '<div class="champ"><label for="nd">Détails</label><textarea id="nd"></textarea></div>'
-      + '<div class="champ"><label>Type</label><div class="puces" id="ptype">' + ['Curatif', 'Préventif', 'Travaux', 'Sécurité'].map((t, i) => '<button type="button" class="puce ' + (i ? '' : 'on') + '" onclick="choisir(\'ptype\',this)">' + t + '</button>').join('') + '</div></div>'
+      + '<div class="champ"><label>Type</label><div class="puces" id="ptype">' + TYPES.map((t, i) => '<button type="button" class="puce ' + (i ? '' : 'on') + '" data-v="' + t + '" onclick="choisir(\'ptype\',this)">' + LIBELLES_TYPE[t] + '</button>').join('') + '</div></div>'
       + '<div class="champ"><label>Reçue par</label><div class="puces" id="psrc">' + ['Appel', 'Mail', 'Planifié'].map((t, i) => '<button type="button" class="puce ' + (i ? '' : 'on') + '" onclick="choisir(\'psrc\',this)">' + t + '</button>').join('') + '</div></div>'
       + '<div class="champ"><label>Priorité</label><div class="puces" id="pprio">' + ['Élevée', 'Moyenne', 'Faible'].map((t, i) => '<button type="button" class="puce ' + (i === 1 ? 'on' : '') + '" onclick="choisir(\'pprio\',this)">' + t + '</button>').join('') + '</div></div>'
       + '<button class="bouton" type="submit">Créer la demande</button></div></form>', null);
   }).catch(echec);
 };
 function choisir(groupe, bouton) { $(groupe).querySelectorAll('.puce').forEach((b) => b.classList.remove('on')); bouton.classList.add('on'); }
-function choix(groupe) { const b = $(groupe).querySelector('.puce.on'); return b ? b.textContent : ''; }
+function choix(groupe) { const b = $(groupe).querySelector('.puce.on'); return b ? (b.dataset.v || b.textContent) : ''; }
 function majSites() {
   const c = (etat.clients || []).filter((x) => x.nom === $('nc').value)[0];
   $('ls').innerHTML = c ? c.sites.map((s) => '<option value="' + esc(s) + '">').join('') : '';

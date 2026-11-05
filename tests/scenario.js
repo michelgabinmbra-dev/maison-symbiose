@@ -48,6 +48,7 @@ etape('paiement partiel', () => api(sc, 'enregistrerPaiement', { facture: fac, m
 etape('trop payé (doit échouer)', () => { try { api(sc, 'enregistrerPaiement', { facture: fac, montant: 99999999 }); return 'PAS ÉCHOUÉ !'; } catch (e) { return e.message; } });
 etape('solde', () => api(sc, 'enregistrerPaiement', { facture: fac, montant: tot.Montant - 500000, mode: 'Virement' }));
 etape('statut affaire', () => api(J, 'ecranAffaire', { numero: num }).affaire.Statut);
+etape('type affaire', () => { api(J, 'definirType', { numero: num, type: 'Travaux' }); return api(J, 'ecranAffaire', { numero: num }).affaire.TypeIntervention; });
 etape('bilan', () => api(J, 'ecranAffaire', { numero: num }).bilan);
 etape('argent', () => { const a = api(J, 'ecranArgent', { debut: '2026-01-01', fin: '2026-12-31' }); return [a.total, a.aEncaisser.length]; });
 etape('point de situation', () => Object.keys(api(J, 'pointDeSituation', { client: 'AFG' })));
@@ -91,6 +92,14 @@ console.log('dépenses après retour matériel :', api(J, 'ecranAffaire', { nume
 console.log('affaire vue technicien :', Object.keys(api(sk, 'ecranAffaire', { numero: num })).join(','), '| facture visible ?', api(sk, 'ecranAffaire', { numero: num }).facture);
 const html = H.FILES['F8'].getDataAsString ? H.FILES['F8'] : null;
 const fs = require('fs');
+// contrat de maintenance (AFG) : curatif sans proforma ni facture
+etape('client UCP sous contrat', () => api(J, 'enregistrerClient', { client: { nom: 'UCP-FM', contrat: 'Maintenance préventive et curative', code: 'UCP' } }));
+const nc = etape('demande curative UCP', () => api(J, 'creerDemande', { client: 'UCP-FM', site: 'Branche 1', titre: 'Fuite split', typeIntervention: 'Curatif', source: 'Mail', priorite: 'Élevée' }));
+etape('sous contrat ?', () => api(J, 'ecranAffaire', { numero: nc }).sousContrat);
+etape('clôture sans rapport (doit échouer)', () => { try { api(J, 'cloturerContrat', { numero: nc }); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué : ' + e.message; } });
+etape('rapport UCP', () => api(J, 'creerRapport', { numero: nc, rapport: { domaine: 'Climatisation', constat: 'Bac bouché', travaux: 'Débouchage', photos: [] } }));
+etape('clôture contrat', () => { api(J, 'cloturerContrat', { numero: nc }); return api(J, 'ecranAffaire', { numero: nc }).affaire.Statut; });
+etape('travaux AFG pas sous contrat', () => api(J, 'ecranAffaire', { numero: num }).sousContrat);
 ['F3','F5','F8'].forEach((id) => { const t = Buffer.from(H.FILES[id].bytes).toString(); console.log(id, H.FILES[id].name, /RAPPORT DE MAINTENANCE|RAPPORT D'INTERVENTION|FACTURE/.exec(t)[0], 'imgs', (t.match(/<img/g)||[]).length); });
 console.log('rappel groupes mois suivant (reprise) :', JSON.stringify(groupesDuMois('2026-12')).slice(0,120));
 console.log('feuille Groupes :', JSON.stringify(H.CLASSEUR.sheets['Groupes'].rows));

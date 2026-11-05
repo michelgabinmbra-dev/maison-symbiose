@@ -213,15 +213,18 @@ function enregistrerVisitePreventive(numeroAffaire, fiche) {
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.RAPPORTS);
   majCellule(feuille, trouverLigneParValeur(feuille, 'NumeroRapport', numero), 'Mesures', JSON.stringify(releves));
 
+  const contrat = estSousContrat(a);
   mettreAJourSuivi(numeroAffaire, {
     avancement: 100,
-    prochaineAction: hs.length ? 'Proforma pour ' + hs.length + ' point(s) HS' : '',
+    prochaineAction: hs.length ? (contrat ? 'Intervention curative (contrat) pour ' : 'Proforma pour ') + hs.length + ' point(s) HS' : '',
     blocage: '',
   });
+  // Sous contrat et rien à reprendre : le dossier est clos, il n'y a rien à facturer.
+  if (contrat && !hs.length) changerStatutAffaire(numeroAffaire, STATUTS_AFFAIRE.CLOTUREE);
   if (hs.length) {
     alerterRoles([ROLES.DG, ROLES.DGA], 'Préventif ' + a.Client + (a.Site ? ' ' + a.Site : '') + ' : ' + hs.length + ' point(s) HS',
       'Rapport ' + numero + ' (' + a.Groupe + ') :\n\n' + hs.map((c) => '- ' + c.section + ' · ' + c.element + (c.observation ? ' : ' + c.observation : '')).join('\n')
-      + '\n\nOuvre l\'affaire ' + numeroAffaire + ' pour faire la proforma.');
+      + '\n\nOuvre l\'affaire ' + numeroAffaire + (contrat ? ' : réparation couverte par le contrat de maintenance.' : ' pour faire la proforma.'));
   }
   return numero;
 }

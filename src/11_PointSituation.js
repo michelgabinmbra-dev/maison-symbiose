@@ -4,7 +4,7 @@
  * attente, actions restantes et délais. Exportable en PDF ou envoyé par mail.
  */
 
-const STATUTS_CLOS = [STATUTS_AFFAIRE.PAYEE, STATUTS_AFFAIRE.ABANDONNEE];
+const STATUTS_CLOS = [STATUTS_AFFAIRE.PAYEE, STATUTS_AFFAIRE.ABANDONNEE, STATUTS_AFFAIRE.CLOTUREE];
 
 function pointDeSituation(client) {
   exigerRole([ROLES.DG, ROLES.DGA, ROLES.COMPTABILITE]);

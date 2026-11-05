@@ -15,7 +15,32 @@ const STATUTS_AFFAIRE = {
   RECEPTION_CONFIRMEE: 'Réception confirmée',
   PAYEE: 'Payée',
   ABANDONNEE: 'Abandonnée',
+  CLOTUREE: 'Clôturée (contrat)',
 };
+
+/** Client sous contrat de maintenance (colonne TypeContrat contenant « maintenance ») : curatif et préventif ne se facturent pas. */
+function clientSousContrat(nomClient) {
+  const c = lireLignes(NOMS_FEUILLES.CLIENTS).filter((x) => x.NomClient === nomClient)[0];
+  return !!c && /maintenance/i.test(String(c.TypeContrat || ''));
+}
+
+/** Affaire couverte par le contrat : maintenance curative ou préventive d'un client sous contrat. */
+function estSousContrat(affaire) {
+  return [TYPES_INTERVENTION.CURATIF, TYPES_INTERVENTION.PREVENTIF].indexOf(affaire.TypeIntervention) !== -1 && clientSousContrat(affaire.Client);
+}
+
+/** Clôture d'une affaire sous contrat (DG, DGA, ou chef d'équipe avec le droit Planning) : il faut au moins un rapport. */
+function cloturerAffaireContrat(numeroAffaire) {
+  exigerRoleOuDroit([ROLES.DG, ROLES.DGA], DROITS.PLANNING);
+  const r = trouverAffaire(numeroAffaire);
+  const a = ligneVersObjet(r.entetes, r.ligne);
+  if (!estSousContrat(a)) throw new Error('Cette affaire n\'est pas couverte par un contrat de maintenance : elle passe par proforma et facture.');
+  if (!rapportsDeLAffaire(numeroAffaire).length) throw new Error('Fais d\'abord le rapport d\'intervention.');
+  const feuille = getFeuilleDonnees(NOMS_FEUILLES.AFFAIRES);
+  majCellule(feuille, r, 'Statut', STATUTS_AFFAIRE.CLOTUREE);
+  majCellule(feuille, r, 'Avancement', 100);
+  majCellule(feuille, r, 'DateMaj', new Date());
+}
 
 /**
  * Crée une nouvelle affaire (demande) pour un client/site.
@@ -88,11 +113,18 @@ function definirPrioriteAffaire(numeroAffaire, priorite) {
   majCellule(getFeuilleDonnees(NOMS_FEUILLES.AFFAIRES), trouverAffaire(numeroAffaire), 'Priorite', priorite);
 }
 
+/** Change le type d'une affaire (DG ou DGA) : maintenance curative, préventive, travaux, sécurité. */
+function definirTypeAffaire(numeroAffaire, type) {
+  exigerRole([ROLES.DG, ROLES.DGA]);
+  if (Object.values(TYPES_INTERVENTION).indexOf(type) === -1) throw new Error('Type invalide : ' + type);
+  majCellule(getFeuilleDonnees(NOMS_FEUILLES.AFFAIRES), trouverAffaire(numeroAffaire), 'TypeIntervention', type);
+}
+
 /** Renvoie les affaires non closes, triées par priorité (Élevée d'abord), toutes sources confondues. */
 function listerUrgences() {
   exigerRole(Object.values(ROLES));
   const ordrePriorite = { 'Élevée': 0, 'Moyenne': 1, 'Faible': 2, '': 3 };
-  const statutsClos = [STATUTS_AFFAIRE.PAYEE, STATUTS_AFFAIRE.ABANDONNEE];
+  const statutsClos = [STATUTS_AFFAIRE.PAYEE, STATUTS_AFFAIRE.ABANDONNEE, STATUTS_AFFAIRE.CLOTUREE];
 
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.AFFAIRES);
   const valeurs = feuille.getDataRange().getValues();
