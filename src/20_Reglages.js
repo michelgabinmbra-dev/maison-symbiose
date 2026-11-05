@@ -2,41 +2,60 @@
  * Réglages depuis le téléphone, sans ouvrir le classeur : équipe (rôle, droits, fonction, code
  * d'accès), clients (contacts, code document, point du vendredi), sites, véhicules, stock
  * (matériel avec seuil d'alerte, outils). Le DG et le DGA voient tout ; Jean (STOCK) ne voit que
- * le stock.
+ * le stock ; Arnaud et Barbara (VEHICULES) les véhicules ; Marina et Armand (droit Planning) les sites.
  */
 
 const ROLES_REGLAGES = [ROLES.DG, ROLES.DGA];
 
+/** Onglets de Réglages ouverts à cette personne : tout pour DG / DGA, sinon selon son rôle et ses droits. */
+function ongletsReglages(u) {
+  if (ROLES_REGLAGES.indexOf(u.role) !== -1) return ['equipe', 'clients', 'sites', 'vehicules', 'stock'];
+  const o = [];
+  if (aLeDroit(u, DROITS.PLANNING)) o.push('sites');
+  if (u.role === ROLES.VEHICULES) o.push('vehicules');
+  if (u.role === ROLES.STOCK) o.push('stock');
+  return o;
+}
+
 function ecranReglages() {
-  const utilisateur = exigerRole(ROLES_REGLAGES.concat([ROLES.STOCK]));
-  const tout = ROLES_REGLAGES.indexOf(utilisateur.role) !== -1;
+  const utilisateur = exigerRole(Object.values(ROLES));
+  const onglets = ongletsReglages(utilisateur);
+  if (!onglets.length) throw new Error('Accès refusé : pas de réglages pour ton rôle.');
+  const tout = onglets.indexOf('equipe') !== -1;
   const ymd = (d) => (dateOuNull(d) ? Utilities.formatDate(dateOuNull(d), 'Africa/Abidjan', 'yyyy-MM-dd') : '');
-  const stock = {
-    materiel: lireLignes(NOMS_FEUILLES.STOCK_MATERIEL).filter((m) => m.Materiel)
-      .map((m) => ({ materiel: m.Materiel, quantite: Number(m.Quantite) || 0, prix: Number(m.PrixUnitaire) || 0, seuil: Number(m.SeuilAlerte) || 0 })),
-    outils: lireLignes(NOMS_FEUILLES.STOCK_OUTILLAGE).filter((o) => o.Outil)
-      .map((o) => ({ outil: o.Outil, lieu: o.Lieu || '', statut: o.Statut })),
-  };
-  if (!tout) return { tout, stock };
-  return {
-    tout,
-    stock,
-    roles: Object.values(ROLES),
-    droits: Object.values(DROITS),
-    equipe: lireLignes(NOMS_FEUILLES.UTILISATEURS).filter((u) => u.Email).map((u) => ({
-      email: u.Email, nom: u.Nom, role: u.Role, actif: u.Actif !== false, droits: String(u.Droits || ''),
-      fonction: u.Fonction || '', telephone: String(u.Telephone || ''), aUnCode: !!u.CodeAcces,
-    })),
-    clients: lireLignes(NOMS_FEUILLES.CLIENTS).filter((c) => c.NomClient).map((c) => ({
-      nom: c.NomClient, contrat: c.TypeContrat || '', contacts: c.ContactEmail || '', code: c.CodeDocument || '',
-      pointHebdo: c.PointHebdo === true || String(c.PointHebdo).toLowerCase() === 'oui',
-    })),
-    sites: lireLignes(NOMS_FEUILLES.SITES).filter((s) => s.NomSite).map((s) => ({ nom: s.NomSite, client: s.NomClient, ville: s.Ville || '' })),
-    vehicules: lireLignes(NOMS_FEUILLES.VEHICULES).filter((v) => v.Immatriculation).map((v) => ({
+  const d = { tout, onglets };
+  if (onglets.indexOf('stock') !== -1) {
+    d.stock = {
+      materiel: lireLignes(NOMS_FEUILLES.STOCK_MATERIEL).filter((m) => m.Materiel)
+        .map((m) => ({ materiel: m.Materiel, quantite: Number(m.Quantite) || 0, prix: Number(m.PrixUnitaire) || 0, seuil: Number(m.SeuilAlerte) || 0 })),
+      outils: lireLignes(NOMS_FEUILLES.STOCK_OUTILLAGE).filter((o) => o.Outil)
+        .map((o) => ({ outil: o.Outil, lieu: o.Lieu || '', statut: o.Statut })),
+    };
+  }
+  if (onglets.indexOf('vehicules') !== -1) {
+    d.vehicules = lireLignes(NOMS_FEUILLES.VEHICULES).filter((v) => v.Immatriculation).map((v) => ({
       immatriculation: v.Immatriculation, marque: v.Marque || '', modele: v.Modele || '',
       visiteTechnique: ymd(v.DateVisiteTechnique), assurance: ymd(v.DateAssurance),
-    })),
-  };
+    }));
+  }
+  if (onglets.indexOf('sites') !== -1) {
+    const clients = lireLignes(NOMS_FEUILLES.CLIENTS).filter((c) => c.NomClient);
+    // Hors DG / DGA, seul le nom du client est transmis (pas les contacts).
+    d.clients = clients.map((c) => (tout ? {
+      nom: c.NomClient, contrat: c.TypeContrat || '', contacts: c.ContactEmail || '', code: c.CodeDocument || '',
+      pointHebdo: c.PointHebdo === true || String(c.PointHebdo).toLowerCase() === 'oui',
+    } : { nom: c.NomClient }));
+    d.sites = lireLignes(NOMS_FEUILLES.SITES).filter((x) => x.NomSite).map((x) => ({ nom: x.NomSite, client: x.NomClient, ville: x.Ville || '' }));
+  }
+  if (tout) {
+    d.roles = Object.values(ROLES);
+    d.droits = Object.values(DROITS);
+    d.equipe = lireLignes(NOMS_FEUILLES.UTILISATEURS).filter((u) => u.Email).map((u) => ({
+      email: u.Email, nom: u.Nom, role: u.Role, actif: u.Actif !== false, droits: String(u.Droits || ''),
+      fonction: u.Fonction || '', telephone: String(u.Telephone || ''), aUnCode: !!u.CodeAcces,
+    }));
+  }
+  return d;
 }
 
 /** Écrit les champs d'un objet dans une ligne (créée si absente), colonne par colonne. */
@@ -88,7 +107,7 @@ function enregistrerClientReglages(c) {
 
 /** Ajoute plusieurs sites d'un coup : une ligne par site, « Nom du site ; Ville » (ville facultative). */
 function ajouterSites(client, texte) {
-  exigerRole(ROLES_REGLAGES);
+  exigerRoleOuDroit(ROLES_REGLAGES, DROITS.PLANNING);
   if (!client) throw new Error('Choisis le client.');
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.SITES);
   const existants = lireLignes(NOMS_FEUILLES.SITES).filter((s) => s.NomClient === client).map((s) => String(s.NomSite).toLowerCase());
@@ -105,7 +124,7 @@ function ajouterSites(client, texte) {
 }
 
 function supprimerSite(client, nom) {
-  exigerRole(ROLES_REGLAGES);
+  exigerRoleOuDroit(ROLES_REGLAGES, DROITS.PLANNING);
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.SITES);
   const valeurs = feuille.getDataRange().getValues();
   const cNom = valeurs[0].indexOf('NomSite');

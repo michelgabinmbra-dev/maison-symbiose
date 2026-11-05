@@ -188,6 +188,8 @@ function appel(action, args) {
 }
 function echec(e) { toast(e.message || String(e)); }
 
+function aLePlanning() { return MOI && (MOI.droits || []).indexOf('Planning') !== -1; }
+function aDesReglages() { return MOI && (estChef() || aLePlanning() || ['STOCK', 'VEHICULES'].indexOf(MOI.role) !== -1); }
 function estChef() { return MOI && (MOI.role === 'DG' || MOI.role === 'DGA'); }
 function voitFinances() { return MOI && ['DG', 'DGA', 'COMPTABILITE'].indexOf(MOI.role) !== -1; }
 function initiales(nom) { return String(nom || '?').split(/\s+/).map((m) => m[0]).join('').slice(0, 2).toUpperCase(); }
@@ -297,7 +299,7 @@ ECRANS.accueil = function () {
       + (voitFinances() ? '<button class="bandeau" onclick="aller(\'point\')"><span><strong>Point de situation en 5 s</strong><small>AFG, UCP-FM… prêt en PDF ou par mail</small></span><span class="rond">' + svg('droite', 18, '#fff', 2.4) + '</span></button>' : '')
       + (voitFinances() ? '<button class="item" onclick="aller(\'materiel\')"><span class="ico vert">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Matériel et outils</b><small>Je prends, je rends, outils non rendus</small></span></button>' : '')
       + '<button class="item" onclick="aller(\'preventif\')"><span class="ico bleu">' + svg('bouclier', 22, '#fff') + '</span><span class="txt"><b>Maintenance préventive</b><small>Visites de mon groupe, fiche et rapport</small></span>' + svg('droite', 20, '#5A6585') + '</button>'
-      + (MOI && ['DG', 'DGA', 'STOCK'].indexOf(MOI.role) !== -1 ? '<button class="item" onclick="aller(\'reglages\')"><span class="ico violet">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Réglages</b><small>' + (MOI.role === 'STOCK' ? 'Matériel, seuils, outils' : 'Équipe et codes, clients, sites, véhicules, stock') + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>' : '')
+      + (aDesReglages() ? '<button class="item" onclick="aller(\'reglages\')"><span class="ico violet">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Réglages</b><small>' + (estChef() ? 'Équipe et codes, clients, sites, véhicules, stock' : [aLePlanning() ? 'sites' : '', MOI.role === 'VEHICULES' ? 'véhicules' : '', MOI.role === 'STOCK' ? 'matériel, seuils, outils' : ''].filter(Boolean).join(', ').replace(/^./, (c) => c.toUpperCase())) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>' : '')
       + '<div class="ligne"><h2>Urgences, tous clients</h2><a href="#" onclick="racine(\'affaires\');return false">Tout voir</a></div>'
       + (d.urgences.length ? d.urgences.map(carteAffaire).join('') : '<div class="vide">Aucune affaire en cours.</div>')
       + '</div>', 'accueil');
@@ -624,7 +626,7 @@ const ONGLETS_REGLAGES = [['equipe', 'Équipe'], ['clients', 'Clients'], ['sites
 ECRANS.reglages = function (p) {
   appel('ecranReglages').then((d) => {
     etat.reglages = d;
-    const onglets = d.tout ? ONGLETS_REGLAGES : [['stock', 'Stock']];
+    const onglets = ONGLETS_REGLAGES.filter((o) => d.onglets.indexOf(o[0]) !== -1);
     const actif = onglets.some((o) => o[0] === p.onglet) ? p.onglet : onglets[0][0];
     rendre(entete('Réglages', 'Sans ouvrir le classeur')
       + '<div class="section"><div class="puces">' + onglets.map((o) => '<button class="puce ' + (o[0] === actif ? 'on' : '') + '" onclick="aller(\'reglages\',{onglet:\'' + o[0] + '\'},true)">' + o[1] + '</button>').join('') + '</div>'
@@ -1023,7 +1025,7 @@ function envoyerPoint() {
 ECRANS.compte = function () {
   rendre(entete(MOI.nom, esc(MOI.email) + ' · ' + esc(MOI.role))
     + '<div class="section"><form class="carte" onsubmit="changerCode(event)"><b>Changer mon code</b><input id="nouveau" type="password" inputmode="numeric" pattern="[0-9]{4,6}" placeholder="4 à 6 chiffres" aria-label="Nouveau code" required><button class="bouton second" type="submit">Enregistrer</button></form>'
-    + (MOI && ['DG', 'DGA', 'STOCK'].indexOf(MOI.role) !== -1 ? '<button class="bouton" onclick="aller(\'reglages\')">Réglages</button>' : '')
+    + (aDesReglages() ? '<button class="bouton" onclick="aller(\'reglages\')">Réglages</button>' : '')
     + '<button class="bouton second" onclick="seDeconnecter()">Se déconnecter</button></div>', null);
 };
 function changerCode(ev) { ev.preventDefault(); appel('changerMonCode', { code: $('nouveau').value }).then(() => { toast('Code changé'); revenir(); }).catch(echec); }

@@ -75,6 +75,13 @@ etape('échéances véhicule', () => api(J, 'enregistrerEcheances', { immatricul
 etape('prendre véhicule', () => api(sk, 'prendreVehicule', { immatriculation: 'AA-123-CI', kilometrage: 900, photo }));
 etape('écran véhicules', () => api(sk, 'ecranVehicules', {}).map((v) => v.alertes));
 etape('réglages (Jean)', () => Object.keys(api(api && connexionApp('jean@symbiozci.com', '3333').jeton, 'ecranReglages', {})));
+const ja = connexionApp('arnaud@symbiozci.com', '4444').jeton, jm = connexionApp('marinayapi@symbiozci.com', '5555').jeton;
+etape('réglages (Arnaud)', () => { const d = api(ja, 'ecranReglages', {}); return [d.onglets, Object.keys(d)]; });
+etape('Arnaud ajoute un véhicule', () => api(ja, 'enregistrerVehicule', { vehicule: { immatriculation: 'bb-456-ci', marque: 'Nissan' } }));
+etape('réglages (Marina)', () => { const d = api(jm, 'ecranReglages', {}); return [d.onglets, d.clients[0], d.sites.length]; });
+etape('Marina ajoute des sites', () => api(jm, 'ajouterSites', { client: 'AFG', texte: 'Agence Jacqueville ; Jacqueville\nAgence Bouna ; Bouna' }));
+etape('Koffi sans réglages (doit échouer)', () => { try { api(sk, 'ecranReglages', {}); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué : ' + e.message; } });
+etape('Marina ne peut pas modifier un client (doit échouer)', () => { try { api(jm, 'enregistrerClient', { client: { nom: 'AFG' } }); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué'; } });
 // déclencheurs
 global.UTILISATEUR_GOOGLE = 'michelgabinmbra@gmail.com'; EMAIL_SESSION = null;
 H.MAILS.length = 0;
