@@ -37,8 +37,72 @@ function checklistPreventif() {
 }
 
 /** Groupes dont l'utilisateur est chef ou membre (tous pour le DG et le DGA). */
+function moisCourant() {
+  return Utilities.formatDate(new Date(), 'Africa/Abidjan', 'yyyy-MM');
+}
+
+/**
+ * Les groupes changent chaque mois : chaque ligne de la feuille Groupes porte son mois (aaaa-mm).
+ * Renvoie la composition du mois demandé ; tant qu'elle n'est pas faite, celle du dernier mois
+ * saisi reste en vigueur (avec reprise = true).
+ */
+function groupesDuMois(mois) {
+  mois = mois || moisCourant();
+  const tous = lireLignes(NOMS_FEUILLES.GROUPES).filter((g) => g.NomGroupe && g.Actif !== false);
+  const moisDe = (g) => (g.Mois instanceof Date ? Utilities.formatDate(g.Mois, 'Africa/Abidjan', 'yyyy-MM') : String(g.Mois || ''));
+  const duMois = tous.filter((g) => moisDe(g) === mois);
+  if (duMois.length) return { mois, groupes: duMois, reprise: false };
+  const precedents = tous.map(moisDe).filter((m) => m && m < mois).sort();
+  const dernier = precedents[precedents.length - 1];
+  return { mois, groupes: tous.filter((g) => moisDe(g) === (dernier || '')), reprise: true, depuis: dernier || '' };
+}
+
+/** Remplace la composition des groupes d'un mois. groupes : [{nom, chefEmail, membres: [emails], zone}]. */
+function enregistrerGroupesDuMois(mois, groupes) {
+  exigerRole([ROLES.DG, ROLES.DGA]);
+  mois = mois || moisCourant();
+  if (!/^\d{4}-\d{2}$/.test(mois)) throw new Error('Mois invalide : ' + mois + ' (format aaaa-mm).');
+  const utilisateurs = lireLignes(NOMS_FEUILLES.UTILISATEURS);
+  const nomDe = (email) => ((utilisateurs.filter((u) => String(u.Email).toLowerCase() === String(email).toLowerCase())[0]) || {}).Nom || email;
+  const propres = (groupes || []).filter((g) => g && g.nom && g.chefEmail);
+  const feuille = getFeuilleDonnees(NOMS_FEUILLES.GROUPES);
+  const verrou = LockService.getScriptLock();
+  verrou.waitLock(10000);
+  try {
+    const valeurs = feuille.getDataRange().getValues();
+    const colMois = valeurs[0].indexOf('Mois');
+    if (colMois === -1) throw new Error('Colonne Mois absente de la feuille Groupes.');
+    for (let i = valeurs.length - 1; i >= 1; i--) {
+      const m = valeurs[i][colMois] instanceof Date ? Utilities.formatDate(valeurs[i][colMois], 'Africa/Abidjan', 'yyyy-MM') : String(valeurs[i][colMois]);
+      if (m === mois) feuille.deleteRow(i + 1);
+    }
+    propres.forEach((g) => feuille.appendRow([
+      String(g.nom), nomDe(g.chefEmail), String(g.chefEmail), (g.membres || []).join(', '), String(g.zone || ''), true, "'" + mois,
+    ]));
+  } finally {
+    verrou.releaseLock();
+  }
+  return propres.length;
+}
+
+/** Écran de composition des groupes du mois (DG / DGA). */
+function ecranGroupes(mois) {
+  exigerRole([ROLES.DG, ROLES.DGA]);
+  const c = groupesDuMois(mois);
+  return {
+    mois: c.mois, reprise: c.reprise, depuis: c.depuis || '',
+    groupes: c.groupes.map((g) => ({
+      nom: g.NomGroupe, chefEmail: g.ChefEmail, zone: g.Zone || '',
+      membres: String(g.Membres || '').split(/[,;\s]+/).filter(Boolean),
+    })),
+    personnes: lireLignes(NOMS_FEUILLES.UTILISATEURS)
+      .filter((u) => u.Email && u.Actif !== false && u.Role !== ROLES.COMPTABILITE)
+      .map((u) => ({ email: u.Email, nom: u.Nom || u.Email })),
+  };
+}
+
 function groupesDe(utilisateur) {
-  const groupes = lireLignes(NOMS_FEUILLES.GROUPES).filter((g) => g.NomGroupe && g.Actif !== false);
+  const groupes = groupesDuMois().groupes;
   if (utilisateur.role === ROLES.DG || utilisateur.role === ROLES.DGA) return groupes;
   const email = String(utilisateur.email).toLowerCase();
   return groupes.filter((g) => String(g.ChefEmail).toLowerCase() === email
@@ -59,9 +123,9 @@ function planifierPreventif(details) {
   if (!details || !details.client || !details.groupe || !(details.sites || []).length) {
     throw new Error('Client, groupe et au moins un site sont obligatoires.');
   }
-  const groupe = lireLignes(NOMS_FEUILLES.GROUPES).filter((g) => g.NomGroupe === details.groupe)[0];
+  const groupe = groupesDuMois().groupes.filter((g) => g.NomGroupe === details.groupe)[0];
   if (!groupe) {
-    throw new Error('Groupe inconnu : ' + details.groupe + ' (feuille Groupes).');
+    throw new Error('Groupe inconnu ce mois-ci : ' + details.groupe + '.');
   }
   const trimestre = details.trimestre || trimestreCourant();
   const deja = lireLignes(NOMS_FEUILLES.AFFAIRES).filter((a) => a.Client === details.client

@@ -434,7 +434,7 @@ ECRANS.preventif = function () {
       + '<span class="txt"><b>' + esc(v.client) + (v.site ? ' · ' + esc(v.site) : '') + '</b><small>' + esc(v.groupe) + ' · ' + esc(v.titre) + (v.faite ? ' · faite le ' + dateCourte(v.date) : (v.prevue ? ' · prévue le ' + dateCourte(v.prevue) : '')) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>';
     rendre(entete('Maintenance préventive', d.groupes.length ? d.groupes.map((g) => esc(g.nom) + (g.chef ? ' (' + esc(g.chef) + ')' : '')).join(' · ') : 'Tu n\'es dans aucun groupe pour l\'instant')
       + '<div class="section">'
-      + (d.peutPlanifier ? '<button class="bouton" onclick="aller(\'planifier\')">Planifier un passage</button>' : '')
+      + (d.peutPlanifier ? '<div class="deux"><button class="bouton" onclick="aller(\'planifier\')">Planifier un passage</button><button class="bouton second" onclick="aller(\'groupes\')">Groupes du mois</button></div>' : '')
       + '<h2>À faire (' + aFaire.length + ')</h2>' + (aFaire.length ? aFaire.map(ligne).join('') : '<div class="vide">Aucune visite à faire.</div>')
       + (faites.length ? '<h2>Faites (' + faites.length + ')</h2>' + faites.slice(0, 30).map(ligne).join('') : '')
       + '</div>', 'accueil');
@@ -469,6 +469,38 @@ function planifierUI(ev) {
   if (!sites.length) { toast('Coche au moins un site'); return; }
   appel('planifierPreventif', { details: { client: $('pc').value, sites, groupe: choix('pgrp'), trimestre: $('ptr').value.trim(), datePrevue: $('pdp').value } })
     .then((n) => { toast(n.length + ' visite(s) planifiée(s)'); revenir(); }).catch(echec);
+}
+ECRANS.groupes = function (p) {
+  appel('ecranGroupes', { mois: p.mois || '' }).then((d) => {
+    etat.groupesMois = d; etat.nbGrp = 0;
+    rendre(entete('Groupes du mois', 'Recomposés chaque mois par toi ou le DGA')
+      + '<div class="section"><div class="carte"><div class="champ"><label for="gmois">Mois</label><input id="gmois" type="month" value="' + esc(d.mois) + '" onchange="aller(\'groupes\',{mois:this.value},true)"></div>'
+      + (d.reprise ? '<small style="color:#B45309">' + (d.depuis ? 'Pas encore fait pour ce mois : composition de ' + esc(d.depuis) + ' reprise, ajuste puis enregistre.' : 'Aucun groupe encore : ajoute le premier.') + '</small>' : '<small style="color:#047857">Composition enregistrée pour ce mois.</small>')
+      + '</div><div id="lgrp"></div>'
+      + '<button class="bouton second" onclick="ajouterGroupeUI()">+ Ajouter un groupe</button>'
+      + '<button class="bouton" onclick="enregistrerGroupesUI()">Enregistrer les groupes de ' + esc(d.mois) + '</button></div>', 'accueil');
+    (d.groupes.length ? d.groupes : [null]).forEach((g) => ajouterGroupeUI(g));
+  }).catch(echec);
+};
+function ajouterGroupeUI(g) {
+  g = g || { nom: 'Groupe ' + (etat.nbGrp + 1), chefEmail: '', zone: '', membres: [] };
+  const i = etat.nbGrp++, pers = etat.groupesMois.personnes;
+  const div = document.createElement('div');
+  div.className = 'carte grp'; div.style.gap = '10px';
+  div.innerHTML = '<div class="deux"><div class="champ"><label for="gn' + i + '">Nom du groupe</label><input id="gn' + i + '" class="gnom" value="' + esc(g.nom) + '"></div>'
+    + '<div class="champ"><label for="gz' + i + '">Zone</label><input id="gz' + i + '" class="gzone" value="' + esc(g.zone) + '" placeholder="Ex. Abidjan Nord"></div></div>'
+    + '<div class="champ"><label for="gc' + i + '">Chef de groupe</label><select id="gc' + i + '" class="gchef"><option value="">Choisir…</option>' + pers.map((x) => '<option value="' + esc(x.email) + '"' + (x.email === g.chefEmail ? ' selected' : '') + '>' + esc(x.nom) + '</option>').join('') + '</select></div>'
+    + '<div class="champ"><label>Membres</label><div class="puces">' + pers.map((x) => '<button type="button" class="puce gmb ' + (g.membres.indexOf(x.email) !== -1 ? 'on' : '') + '" data-email="' + esc(x.email) + '" onclick="this.classList.toggle(\'on\')">' + esc(x.nom) + '</button>').join('') + '</div></div>'
+    + '<button type="button" class="puce" style="align-self:flex-start;color:#B91C1C" onclick="this.closest(\'.grp\').remove()">Retirer ce groupe</button>';
+  $('lgrp').appendChild(div);
+}
+function enregistrerGroupesUI() {
+  const groupes = Array.from(document.querySelectorAll('.grp')).map((c) => ({
+    nom: c.querySelector('.gnom').value.trim(), zone: c.querySelector('.gzone').value.trim(), chefEmail: c.querySelector('.gchef').value,
+    membres: Array.from(c.querySelectorAll('.gmb.on')).map((b) => b.dataset.email),
+  }));
+  if (groupes.some((g) => g.nom && !g.chefEmail)) { toast('Choisis un chef pour chaque groupe'); return; }
+  appel('enregistrerGroupes', { mois: $('gmois').value, groupes }).then((n) => { toast(n + ' groupe(s) enregistré(s)'); revenir(); }).catch(echec);
 }
 ECRANS.visite = function (p) {
   appel('ficheVisite', { numero: p.numero }).then((d) => {
@@ -665,7 +697,7 @@ ECRANS.vehicules = function () {
     rendre('<div class="hero court"><div class="orb a"></div><h1>Véhicules</h1><p style="margin:4px 0 0;color:#C7D2FE;font-size:13px">Je prends / je dépose, avec photo du compteur</p></div><div class="feuille">'
       + (liste.length ? liste.map((v) => '<button class="item" onclick="aller(\'vehicule\',{immatriculation:\'' + esc(v.immatriculation) + '\'})"><span class="ico ' + (v.sorti ? 'jaune' : 'vert') + '">' + svg('auto', 22, '#fff') + '</span>'
         + '<span class="txt"><b>' + esc([v.marque, v.modele].filter(Boolean).join(' ') || v.immatriculation) + '</b><small>' + esc(v.immatriculation) + (v.dernierKm != null ? ' · ' + v.dernierKm.toLocaleString('fr-FR') + ' km' : '') + '</small></span>'
-        + '<span class="pastille ' + (v.sorti ? 'p-moyenne' : 'p-ok') + '">' + (v.sorti ? 'Pris par ' + esc(v.conducteur) : 'Disponible') + '</span></button>').join('')
+        + '<span class="pastille ' + ((v.alertes || []).length ? 'p-alerte' : v.sorti ? 'p-moyenne' : 'p-ok') + '"' + ((v.alertes || []).length ? ' style="max-width:140px;white-space:normal;text-align:center"' : '') + '>' + ((v.alertes || []).length ? esc(v.alertes[0].texte) : v.sorti ? 'Pris par ' + esc(v.conducteur) : 'Disponible') + '</span></button>').join('')
         : '<div class="vide">Aucun véhicule enregistré. Ajoute-les dans la feuille Vehicules.</div>') + '</div>', 'vehicules');
     etat.vehicules = liste;
   }).catch(echec);
@@ -681,8 +713,25 @@ ECRANS.vehicule = function (p) {
     + (depot ? '<div class="champ"><label for="vi">Ville parcourue</label><input id="vi" placeholder="Ex. Sikensi"></div>' : '')
     + (depot && v.dernierKm != null ? '<div class="kv"><span>Pris à</span><span>' + v.dernierKm.toLocaleString('fr-FR') + ' km par ' + esc(v.conducteur) + '</span></div>' : '')
     + '<button class="bouton" type="submit">' + (depot ? 'Valider le dépôt' : 'Valider la prise') + '</button>'
-    + '<small style="color:#5A6585;text-align:center">Une anomalie de kilométrage alerte le référent véhicules.</small></div></form>', 'vehicules');
+    + '<small style="color:#5A6585;text-align:center">Une anomalie de kilométrage alerte le référent véhicules.</small></div></form>'
+    + carteEcheances(v), 'vehicules');
 };
+function carteEcheances(v) {
+  const alertes = (v.alertes || []).map((a) => '<div class="kv"><span style="color:' + (a.niveau === 'retard' ? '#B91C1C' : '#B45309') + ';font-weight:600">' + esc(a.texte) + '</span></div>').join('');
+  const gere = MOI && ['VEHICULES', 'DG', 'DGA'].indexOf(MOI.role) !== -1;
+  if (!gere) return alertes ? '<div class="section" style="margin-top:12px"><div class="carte">' + alertes + '</div></div>' : '';
+  return '<div class="section" style="margin-top:12px;padding-bottom:110px"><form class="carte" onsubmit="enregistrerEcheancesUI(event)"><b style="font-size:13px;color:#5A6585">ÉCHÉANCES</b>' + alertes
+    + '<div class="deux"><div class="champ"><label for="evt">Visite technique</label><input id="evt" type="date" value="' + esc(v.visiteTechnique || '') + '"></div>'
+    + '<div class="champ"><label for="eas">Assurance</label><input id="eas" type="date" value="' + esc(v.assurance || '') + '"></div></div>'
+    + '<div class="champ"><label for="evd">Prochaine vidange (km)</label><input id="evd" type="number" inputmode="numeric" value="' + (v.kmProchaineVidange || '') + '"></div>'
+    + '<button class="bouton second" type="submit">Enregistrer les échéances</button>'
+    + '<small style="color:#5A6585">Arnaud est prévenu 15 jours avant, et 500 km avant la vidange.</small></form></div>';
+}
+function enregistrerEcheancesUI(ev) {
+  ev.preventDefault();
+  appel('enregistrerEcheances', { immatriculation: etat.courant.params.immatriculation, echeances: { visiteTechnique: $('evt').value, assurance: $('eas').value, kmProchaineVidange: $('evd').value } })
+    .then(() => { toast('Échéances enregistrées'); racine('vehicules'); }).catch(echec);
+}
 function lirePhoto(input) {
   const f = input.files && input.files[0]; if (!f) return;
   const img = new Image(), lecteur = new FileReader();

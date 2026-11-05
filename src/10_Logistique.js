@@ -81,13 +81,24 @@ function listerOutilsNonRendus() {
 /** Tourne chaque matin : envoie à Jean la liste des outils non rendus et de qui les a pris. */
 function verifierOutilsNonRendus() {
   const enRetard = listerOutilsNonRendus();
-  if (enRetard.length === 0) {
+  const bas = listerMaterielSousSeuil();
+  if (enRetard.length === 0 && bas.length === 0) {
     return;
   }
   const lignes = enRetard.map((o) => '- ' + o.outil + ' : pris par ' + o.prisPar + ' le '
     + o.depuis.toLocaleDateString('fr-FR') + ' (' + o.joursDeRetard + ' j), lieu déclaré : ' + o.lieuDeclare);
-  alerterRoles([ROLES.STOCK], enRetard.length + ' outil(s) non rendu(s)',
-    'Outils non rendus à ce jour :\n\n' + lignes.join('\n'));
+  const lignesBas = bas.map((m) => '- ' + m.materiel + ' : ' + m.quantite + ' en stock (seuil ' + m.seuil + ')');
+  alerterRoles([ROLES.STOCK],
+    [enRetard.length ? enRetard.length + ' outil(s) non rendu(s)' : '', bas.length ? bas.length + ' matériel(s) à racheter' : ''].filter(Boolean).join(', '),
+    (enRetard.length ? 'Outils non rendus à ce jour :\n\n' + lignes.join('\n') : '')
+    + (bas.length ? (enRetard.length ? '\n\n' : '') + 'Matériel sous le seuil d\'alerte :\n\n' + lignesBas.join('\n') : ''));
+}
+
+/** Matériel dont la quantité est au seuil d'alerte ou en dessous (colonne SeuilAlerte de Stock_Materiel). */
+function listerMaterielSousSeuil() {
+  return lireLignes(NOMS_FEUILLES.STOCK_MATERIEL)
+    .filter((m) => m.Materiel && Number(m.SeuilAlerte) > 0 && Number(m.Quantite) <= Number(m.SeuilAlerte))
+    .map((m) => ({ materiel: m.Materiel, quantite: Number(m.Quantite) || 0, seuil: Number(m.SeuilAlerte) }));
 }
 
 function installerDeclencheurOutils() {

@@ -46,6 +46,9 @@ const ACTIONS_API = {
   ficheVisite: (a) => ficheVisite(a.numero),
   planifierPreventif: (a) => planifierPreventif(a.details),
   enregistrerVisite: (a) => enregistrerVisitePreventive(a.numero, a.fiche),
+  ecranGroupes: (a) => ecranGroupes(a.mois),
+  enregistrerGroupes: (a) => enregistrerGroupesDuMois(a.mois, a.groupes),
+  enregistrerEcheances: (a) => enregistrerEcheancesVehicule(a.immatriculation, a.echeances),
   // Facture et paiements
   emettreFacture: (a) => emettreFacture(a.numero, { bonCommande: a.bonCommande, delaiJours: a.delaiJours }),
   deposerFacture: (a) => deposerFacture(a.facture, a.date),
@@ -172,6 +175,7 @@ function listeClients() {
 function ecranVehicules() {
   exigerRole(Object.values(ROLES));
   const mouvements = lireLignes(NOMS_FEUILLES.MOUVEMENTS_VEHICULE);
+  const ymd = (d) => (dateOuNull(d) ? Utilities.formatDate(dateOuNull(d), 'Africa/Abidjan', 'yyyy-MM-dd') : '');
   return lireLignes(NOMS_FEUILLES.VEHICULES).map((v) => {
     const siens = mouvements.filter((m) => m.Immatriculation === v.Immatriculation).sort((a, b) => b.Date - a.Date);
     const dernier = siens[0];
@@ -181,6 +185,9 @@ function ecranVehicules() {
       conducteur: dernier ? dernier.Conducteur : '',
       dernierKm: dernier ? Number(dernier.Kilometrage) : null,
       dateDernier: dernier ? dernier.Date : null,
+      visiteTechnique: ymd(v.DateVisiteTechnique), assurance: ymd(v.DateAssurance),
+      kmProchaineVidange: Number(v.KmProchaineVidange) || null,
+      alertes: alertesVehicule(v, dernier),
     };
   });
 }

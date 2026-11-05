@@ -25,7 +25,7 @@ function initialiserBaseDeDonnees() {
     feuilleUtilisateurs.appendRow(['michelgabinmbra@gmail.com', 'Michel', ROLES.DG, true]);
   }
 
-  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.CLIENTS, ['NomClient', 'TypeContrat', 'ContactEmail', 'CodeDocument']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.CLIENTS, ['NomClient', 'TypeContrat', 'ContactEmail', 'CodeDocument', 'PointHebdo']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.SITES, ['NomSite', 'NomClient', 'Ville']);
 
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.AFFAIRES, [
@@ -45,7 +45,7 @@ function initialiserBaseDeDonnees() {
     'NumeroRapport', 'NumeroAffaire', 'Technicien', 'Date', 'Domaine', 'Localisation', 'Constat',
     'Cause', 'TravauxRealises', 'Recommandation', 'Controles', 'Photos', 'CreePar', 'Mesures',
   ]);
-  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.GROUPES, ['NomGroupe', 'NomChef', 'ChefEmail', 'Membres', 'Zone', 'Actif']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.GROUPES, ['NomGroupe', 'NomChef', 'ChefEmail', 'Membres', 'Zone', 'Actif', 'Mois']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.CHECKLIST_PREVENTIF, ['Section', 'Element']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.FACTURES, [
     'NumeroFacture', 'NumeroAffaire', 'Montant', 'DateEmission', 'DelaiPaiementJours',
@@ -59,13 +59,13 @@ function initialiserBaseDeDonnees() {
     'NumeroDepense', 'NumeroAffaire', 'Categorie', 'Montant', 'Date', 'Description', 'CreePar',
   ]);
 
-  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.VEHICULES, ['Immatriculation', 'Marque', 'Modele']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.VEHICULES, ['Immatriculation', 'Marque', 'Modele', 'DateVisiteTechnique', 'DateAssurance', 'KmProchaineVidange']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.MOUVEMENTS_VEHICULE, [
     'Immatriculation', 'Conducteur', 'Action', 'Kilometrage', 'VilleParcourue', 'PhotoUrl', 'Date',
   ]);
 
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.STOCK_OUTILLAGE, ['Outil', 'Lieu', 'Statut', 'DerniereMaj']);
-  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.STOCK_MATERIEL, ['Materiel', 'Quantite', 'PrixUnitaire']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.STOCK_MATERIEL, ['Materiel', 'Quantite', 'PrixUnitaire', 'SeuilAlerte']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.MOUVEMENTS_OUTILLAGE, [
     'Outil', 'Agent', 'Action', 'Date', 'LieuDeclare', 'ConfirmeParJean',
   ]);
