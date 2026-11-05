@@ -7,7 +7,9 @@ function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('Maison Symbiose')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+    // Plein écran dans l'appli installée (symbioz-ci.github.io l'affiche dans un cadre) : choisi par Michel le 05/11/2026.
+    // L'accès reste protégé par le code personnel de chaque utilisateur.
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 const ACTIONS_API = {
