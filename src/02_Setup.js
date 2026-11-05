@@ -31,7 +31,7 @@ function initialiserBaseDeDonnees() {
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.AFFAIRES, [
     'NumeroAffaire', 'Client', 'Site', 'TypeIntervention', 'Source', 'Priorite',
     'Groupe', 'Statut', 'DateCreation', 'CreePar', 'Titre', 'Description', 'Agent',
-    'Avancement', 'Blocage', 'ProchaineAction', 'DelaiPrevu', 'DateMaj',
+    'Avancement', 'Blocage', 'ProchaineAction', 'DelaiPrevu', 'DateMaj', 'AFacturer', 'HeureIntervention',
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.DEVIS, [
     'NumeroDevis', 'NumeroAffaire', 'CoutEstime', 'MargeVisee', 'PrixPropose',
@@ -43,10 +43,11 @@ function initialiserBaseDeDonnees() {
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.RAPPORTS, [
     'NumeroRapport', 'NumeroAffaire', 'Technicien', 'Date', 'Domaine', 'Localisation', 'Constat',
-    'Cause', 'TravauxRealises', 'Recommandation', 'Controles', 'Photos', 'CreePar', 'Mesures',
+    'Cause', 'TravauxRealises', 'Recommandation', 'Controles', 'Photos', 'CreePar', 'Mesures', 'Statut', 'EnvoyeLe',
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.GROUPES, ['NomGroupe', 'NomChef', 'ChefEmail', 'Membres', 'Zone', 'Actif', 'Mois']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.CHECKLIST_PREVENTIF, ['Section', 'Element']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.JOURNAL, ['NumeroAffaire', 'Date', 'Par', 'Type', 'Detail']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.MESSAGES, ['NumeroAffaire', 'Date', 'Par', 'Destinataires', 'Sujet', 'Texte']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.FACTURES, [
     'NumeroFacture', 'NumeroAffaire', 'Montant', 'DateEmission', 'DelaiPaiementJours',

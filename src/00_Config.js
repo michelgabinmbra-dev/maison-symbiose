@@ -23,6 +23,7 @@ const NOMS_FEUILLES = {
   GROUPES: 'Groupes',
   CHECKLIST_PREVENTIF: 'Checklist_Preventif',
   MESSAGES: 'Messages',
+  JOURNAL: 'Journal',
   FACTURES: 'Factures',
   PAIEMENTS: 'Paiements',
   DEPENSES: 'Depenses',

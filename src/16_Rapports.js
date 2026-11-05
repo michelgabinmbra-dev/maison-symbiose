@@ -39,6 +39,7 @@ function creerRapport(numeroAffaire, details) {
   if (!(Number(affaire.ligne[affaire.entetes.indexOf('Avancement')]) > 0)) {
     mettreAJourSuivi(numeroAffaire, { avancement: 20 });
   }
+  signalerRapportARelire(numero, numeroAffaire, utilisateur.nom);
   return numero;
 }
 
@@ -48,6 +49,8 @@ function rapportsDeLAffaire(numeroAffaire) {
     .map((r) => ({
       numero: r.NumeroRapport, date: r.Date, technicien: r.Technicien, domaine: r.Domaine,
       constat: r.Constat, nombrePhotos: JSON.parse(r.Photos || '[]').length,
+      cause: r.Cause || '', travaux: r.TravauxRealises || '', recommandation: r.Recommandation || '', localisation: r.Localisation || '',
+      statut: r.Statut || '', envoyeLe: r.EnvoyeLe instanceof Date ? r.EnvoyeLe.toISOString() : (r.EnvoyeLe || ''),
     }));
 }
 
@@ -141,5 +144,10 @@ function envoyerRapport(numeroRapport) {
     htmlBody: "<p>Bonjour,</p><p>Veuillez trouver ci-joint le rapport de notre intervention.</p><p>Cordialement,<br>Symbiose</p>",
     attachments: [pdfRapportBlob(numeroRapport)],
   });
+  const feuille = getFeuilleDonnees(NOMS_FEUILLES.RAPPORTS);
+  const ligne = trouverLigneParValeur(feuille, 'NumeroRapport', numeroRapport);
+  majCellule(feuille, ligne, 'Statut', STATUTS_RAPPORT.ENVOYE);
+  majCellule(feuille, ligne, 'EnvoyeLe', new Date());
+  noterJournal(r.NumeroAffaire, TYPES_JOURNAL.ENVOI, 'Rapport ' + numeroRapport + ' envoyé à ' + a, utilisateur.nom);
   return a;
 }

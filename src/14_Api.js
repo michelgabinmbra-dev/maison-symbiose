@@ -29,6 +29,10 @@ const ACTIONS_API = {
   cloturerContrat: (a) => cloturerAffaireContrat(a.numero),
   envoyerMessage: (a) => envoyerMessageClient(a.numero, a.message),
   ping: () => null,
+  noterAppel: (a) => noterAppelClient(a.numero, a.appel),
+  programmer: (a) => programmerIntervention(a.numero, a.programmation),
+  aFacturer: (a) => marquerAFacturer(a.numero, a.oui),
+  modifierRapport: (a) => modifierRapport(a.rapport, a.champs),
   enLigne: () => personnesEnLigne(),
   mettreAJourSuivi: (a) => mettreAJourSuivi(a.numero, a.suivi),
   corrigerClient: (a) => corrigerClientAffaire(a.numero, a.client, a.site),
@@ -123,6 +127,7 @@ function ecranAccueil() {
     },
     urgences: listerUrgences().slice(0, 30).map(resumerAffaire),
     enLigne: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) !== -1 ? resumePresence().enLigne : null,
+    rapportsARelire: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) !== -1 ? rapportsARelire() : [],
   };
 }
 
@@ -169,6 +174,12 @@ function ecranAffaire(numero) {
     etatsControle: ETATS_CONTROLE,
     sousContrat: estSousContrat(affaire),
     messages: messagesDeLAffaire(numero),
+    journal: journalDeLAffaire(numero),
+    peutPlanifier: peutPlanifierAffaire(utilisateur),
+    techniciens: peutPlanifierAffaire(utilisateur) ? lireLignes(NOMS_FEUILLES.UTILISATEURS).filter((u) => u.Email && u.Actif !== false && peutEtreDansUnGroupe(u)).map((u) => ({ email: u.Email, nom: u.Nom || u.Email, fonction: u.Fonction || '' })) : [],
+    texteProgramme: texteInterventionProgrammee(affaire),
+    aFacturer: String(affaire.AFacturer || '').toLowerCase() === 'oui',
+    clientSousContrat: clientSousContrat(affaire.Client),
     contacts: String(contactClient(affaire.Client) || '').split(/[,;\s]+/).filter(Boolean),
     modelesMessage: MODELES_MESSAGE,
     sujetMessage: sujetParDefaut(affaire),

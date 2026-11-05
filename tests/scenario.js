@@ -116,6 +116,23 @@ etape('en ligne (DG)', () => { const d = api(J, 'enLigne', {}); return [d.enLign
 etape('compteur accueil', () => api(J, 'ecranAccueil', {}).enLigne);
 etape('en ligne refusé au technicien', () => { try { api(sk, 'enLigne', {}); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué'; } });
 etape('personnes des groupes (sans Barbara ni direction)', () => api(jm, 'ecranGroupes', {}).personnes.map((p) => p.nom));
+// circuit complet : appel, programmation, rapport à relire, correction, envoi, facturation hors contrat
+etape('contacts UCP', () => api(J, 'enregistrerClient', { client: { nom: 'UCP-FM', contrat: 'Maintenance préventive et curative', code: 'UCP', contacts: 'p@ucp-fm.ci' } }));
+const n2 = etape('demande UCP 2', () => api(J, 'creerDemande', { client: 'UCP-FM', site: 'Branche 2', titre: 'TR: Panne électricité', typeIntervention: 'Curatif', source: 'Mail', priorite: 'Élevée' }));
+etape('Koffi ne peut pas appeler (doit échouer)', () => { try { api(sk, 'noterAppel', { numero: n2, appel: { resultat: 'Confirmée' } }); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué'; } });
+etape('Marina note l\'appel', () => { api(jm, 'noterAppel', { numero: n2, appel: { contact: 'M. X', resultat: 'Confirmée', note: 'ok pour demain' } }); return api(jm, 'ecranAffaire', { numero: n2 }).affaire.Statut; });
+const nbMails = H.MAILS.length;
+etape('Marina programme', () => api(jm, 'programmer', { numero: n2, programmation: { date: '2026-11-06', heure: '09:00', techniciens: ['koffi@symbiozci.com'] } }));
+etape('mail au technicien', () => H.MAILS.slice(nbMails).map((m) => m.to + ' | ' + m.subject));
+etape('fiche après programmation', () => { const e = api(J, 'ecranAffaire', { numero: n2 }); return [e.affaire.Statut, e.affaire.Agent, e.texteProgramme, e.journal.length]; });
+const r2 = etape('rapport Koffi', () => api(sk, 'creerRapport', { numero: n2, rapport: { domaine: 'Électricité', constat: 'disjoncteur HS', travaux: 'remplacé', photos: [] } }));
+etape('rapports à relire (accueil DG)', () => api(J, 'ecranAccueil', {}).rapportsARelire.map((r) => r.numero + ':' + r.titre));
+etape('DG corrige', () => { api(J, 'modifierRapport', { rapport: r2, champs: { constat: 'Disjoncteur général HS', cause: 'surcharge' } }); return api(J, 'ecranAffaire', { numero: n2 }).rapports.map((r) => r.constat + '/' + r.statut); });
+etape('Koffi ne peut pas corriger (doit échouer)', () => { try { api(sk, 'modifierRapport', { rapport: r2, champs: { constat: 'x' } }); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué'; } });
+etape('envoi rapport', () => { api(J, 'envoyerRapport', { rapport: r2 }); return api(J, 'ecranAffaire', { numero: n2 }).rapports.map((r) => r.statut); });
+etape('à facturer', () => { api(J, 'aFacturer', { numero: n2, oui: true }); const e = api(J, 'ecranAffaire', { numero: n2 }); return [e.sousContrat, e.aFacturer]; });
+etape('clôture refusée si à facturer', () => { try { api(J, 'cloturerContrat', { numero: n2 }); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué'; } });
+etape('historique', () => api(J, 'ecranAffaire', { numero: n2 }).journal.map((j) => j.type));
 ['F3','F5','F8'].forEach((id) => { const t = Buffer.from(H.FILES[id].bytes).toString(); console.log(id, H.FILES[id].name, /RAPPORT DE MAINTENANCE|RAPPORT D'INTERVENTION|FACTURE/.exec(t)[0], 'imgs', (t.match(/<img/g)||[]).length); });
 console.log('rappel groupes mois suivant (reprise) :', JSON.stringify(groupesDuMois('2026-12')).slice(0,120));
 console.log('feuille Groupes :', JSON.stringify(H.CLASSEUR.sheets['Groupes'].rows));

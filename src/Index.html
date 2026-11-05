@@ -306,6 +306,7 @@ ECRANS.accueil = function () {
       + '<button class="item" onclick="aller(\'preventif\')"><span class="ico bleu">' + svg('bouclier', 22, '#fff') + '</span><span class="txt"><b>Maintenance préventive</b><small>Visites de mon groupe, fiche et rapport</small></span>' + svg('droite', 20, '#5A6585') + '</button>'
       + (aDesReglages() ? '<button class="item" onclick="aller(\'reglages\')"><span class="ico violet">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Réglages</b><small>' + (estChef() ? 'Équipe et codes, clients, sites, véhicules, stock' : [aLePlanning() ? 'sites' : '', MOI.role === 'VEHICULES' ? 'véhicules' : '', MOI.role === 'STOCK' ? 'matériel, seuils, outils' : ''].filter(Boolean).join(', ').replace(/^./, (c) => c.toUpperCase())) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>' : '')
       + '<div class="ligne"><h2>Urgences, tous clients</h2><a href="#" onclick="racine(\'affaires\');return false">Tout voir</a></div>'
+      + (d.rapportsARelire && d.rapportsARelire.length ? '<h2>Rapports à relire · ' + d.rapportsARelire.length + '</h2>' + d.rapportsARelire.map((r) => '<button class="item" onclick="aller(\'affaire\',{numero:\'' + esc(r.affaire) + '\'})"><span class="ico jaune">' + svg('liste', 22, '#fff') + '</span><span class="txt"><b>' + esc(r.numero) + ' · ' + esc(r.client) + '</b><small>' + esc(r.technicien) + ' · ' + esc(r.titre) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>').join('') : '')
       + (d.urgences.length ? d.urgences.map(carteAffaire).join('') : '<div class="vide">Aucune affaire en cours.</div>')
       + '</div>', 'accueil');
   }).catch(echec);
@@ -322,37 +323,49 @@ ECRANS.affaires = function (p) {
 };
 
 const ETAPES = [['Nouvelle demande', 'Demande'], ['Devis validé', 'Proforma'], ['En exécution', 'Bon reçu'], ['Facture émise', 'Facture'], ['Réception confirmée', 'Réception'], ['Payée', 'Payée']];
-const ETAPES_CONTRAT = [['Nouvelle demande', 'Demande'], ['En exécution', 'Intervention'], ['', 'Rapport'], ['Clôturée (contrat)', 'Clôturée']];
-function rangContrat(a, nbRapports) { return a.Statut === 'Clôturée (contrat)' ? 3 : nbRapports ? 2 : a.Statut === 'En exécution' ? 1 : 0; }
+const ETAPES_CONTRAT = [['', 'Demande'], ['', 'Confirmée'], ['', 'Programmée'], ['', 'Rapport'], ['', 'Envoyé'], ['', 'Clôturée']];
+function rangContrat(a, rapports) {
+  if (a.Statut === 'Clôturée (contrat)') return 5;
+  if (rapports.some((r) => r.statut === 'Envoyé')) return 4;
+  if (rapports.length) return 3;
+  if (a.Statut === 'Programmée' || a.Statut === 'En exécution') return 2;
+  return a.Statut === 'Confirmée par le client' ? 1 : 0;
+}
 function rangEtape(statut) {
   const ordre = ['Nouvelle demande', 'Devis à revoir', 'Devis validé', 'En exécution', 'Facture émise', 'Réception confirmée', 'Payée'];
-  const r = ordre.indexOf(statut); return r <= 1 ? 0 : r - 1;
+  const r = ordre.indexOf(statut); return r <= 1 ? 0 : r - 1; // Confirmée / Programmée : encore à l'étape Demande
 }
 
 ECRANS.affaire = function (p) {
   appel('ecranAffaire', { numero: p.numero }).then((d) => {
     const a = d.affaire; etat.affaire = d;
     const etapes = d.sousContrat ? ETAPES_CONTRAT : ETAPES;
-    const rang = d.sousContrat ? rangContrat(a, d.rapports.length) : rangEtape(a.Statut);
+    const rang = d.sousContrat ? rangContrat(a, d.rapports) : rangEtape(a.Statut);
     const delai = a.DelaiPrevu ? new Date(a.DelaiPrevu).toISOString().slice(0, 10) : '';
     let html = entete(a.Titre || a.TypeIntervention, esc(a.NumeroAffaire) + ' · ' + esc(LIBELLES_TYPE[a.TypeIntervention] || a.TypeIntervention) + ' · ' + esc(a.Source) + '<br>' + esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : '') + (a.Agent ? ' · Agent : ' + esc(a.Agent) : ''))
       + '<div class="section">'
       + '<div class="carte"><div class="ligne"><b style="font-size:13px;color:#5A6585">OÙ EN EST LE DOSSIER</b>' + pastillePriorite(a.Priorite) + '</div>'
-      + '<div class="etapes"' + (d.sousContrat ? ' style="grid-template-columns:repeat(4,minmax(0,1fr))"' : '') + '>' + etapes.map((e, i) => '<i class="' + (i <= rang ? 'on' : '') + '"></i>').join('') + '</div>'
-      + '<div class="etiquettes"' + (d.sousContrat ? ' style="grid-template-columns:repeat(4,minmax(0,1fr))"' : '') + '>' + etapes.map((e, i) => '<span' + (i === rang ? ' style="color:#0F1733;font-weight:700"' : '') + '>' + e[1] + '</span>').join('') + '</div>'
+      + '<div class="etapes">' + etapes.map((e, i) => '<i class="' + (i <= rang ? 'on' : '') + '"></i>').join('') + '</div>'
+      + '<div class="etiquettes">' + etapes.map((e, i) => '<span' + (i === rang ? ' style="color:#0F1733;font-weight:700"' : '') + '>' + e[1] + '</span>').join('') + '</div>'
       + '<div style="font-size:14px">Statut : <b>' + esc(a.Statut) + '</b></div>'
-      + (d.sousContrat ? '<div style="font-size:13px;background:#ECFDF5;color:#065F46;border-radius:12px;padding:10px 12px"><b>Couvert par le contrat de maintenance ' + esc(a.Client) + '</b> : rien à facturer. Intervention, rapport, puis clôture.</div>'
+      + (d.sousContrat ? '<div style="font-size:13px;background:#ECFDF5;color:#065F46;border-radius:12px;padding:10px 12px"><b>Couvert par le contrat de maintenance ' + esc(a.Client) + '</b> : rien à facturer. Intervention, rapport, puis clôture.'
+        + (d.peutGerer ? '<br><a href="#" onclick="marquerAFacturer(true);return false" style="color:#065F46;font-weight:700">Cette intervention sera facturée (hors contrat)</a>' : '') + '</div>'
         + (d.peutCloturer && a.Statut !== 'Clôturée (contrat)' ? '<button class="bouton" ' + (d.rapports.length ? '' : 'disabled title="Fais d\'abord le rapport" style="opacity:.5"') + ' onclick="cloturerContrat()">Clôturer le dossier' + (d.rapports.length ? '' : ' (après le rapport)') + '</button>' : '') : '')
+      + (d.aFacturer ? '<div style="font-size:13px;background:#FFF7ED;color:#9A3412;border-radius:12px;padding:10px 12px"><b>À facturer, même sous contrat</b> : rapport, proforma puis facture.' + (d.peutGerer ? '<br><a href="#" onclick="marquerAFacturer(false);return false" style="color:#9A3412;font-weight:700">Remettre sous contrat</a>' : '') + '</div>' : '')
       + (d.peutGerer || d.voitFinances ? '<select aria-label="Changer le statut" onchange="changerStatut(this.value)"><option value="">Changer le statut…</option>' + d.statuts.map((s) => '<option>' + esc(s) + '</option>').join('') + '</select>' : '')
       + (d.peutGerer ? '<select aria-label="Type d\'intervention" onchange="definirType(this.value)">' + TYPES.map((t) => '<option value="' + t + '"' + ((a.TypeIntervention || 'Curatif') === t ? ' selected' : '') + '>' + LIBELLES_TYPE[t] + '</option>').join('') + '</select>' : '<p style="margin:0">Type : <b>' + esc(LIBELLES_TYPE[a.TypeIntervention] || a.TypeIntervention || '') + '</b></p>')
       + (d.peutGerer ? '<div class="puces">' + ['Élevée', 'Moyenne', 'Faible'].map((pr) => '<button class="puce ' + (a.Priorite === pr ? 'on' : '') + '" onclick="definirPriorite(\'' + pr + '\')">' + pr + '</button>').join('') + '</div>' : '')
       + '</div>'
       + (a.Description ? '<div class="carte"><b style="font-size:13px;color:#5A6585">DEMANDE</b><div style="font-size:14px;white-space:pre-line">' + esc(nettoyerMail(a.Description).slice(0, 600)) + '</div></div>' : '')
+      + (d.peutPlanifier ? cartePlanification(d) : (a.DelaiPrevu && a.Agent ? '<div class="carte"><b style="font-size:13px;color:#5A6585">PROGRAMMATION</b><div style="font-size:14px">' + dateCourte(a.DelaiPrevu) + (a.HeureIntervention ? ' à ' + esc(String(a.HeureIntervention).replace(/^'/, '')) : '') + ' · ' + esc(a.Agent) + '</div></div>' : ''))
       + '<div class="carte"><div class="ligne"><b style="font-size:13px;color:#5A6585">RAPPORTS D\'INTERVENTION</b><span style="font-size:13px;color:#5A6585">' + d.rapports.length + '</span></div>'
-      + d.rapports.map((r) => '<div class="kv" style="align-items:center"><span><b>' + esc(r.numero) + '</b> · ' + dateCourte(r.date) + ' · ' + esc(r.technicien) + (r.nombrePhotos ? ' · ' + r.nombrePhotos + ' photo' + (r.nombrePhotos > 1 ? 's' : '') : '') + '<br><small style="color:#5A6585">' + esc(String(r.constat).slice(0, 90)) + '</small></span>'
-        + '<span style="display:flex;gap:6px"><button class="puce" onclick="pdfRapport(\'' + esc(r.numero) + '\')">PDF</button>' + (d.peutGerer ? '<button class="puce" onclick="envoyerRapport(\'' + esc(r.numero) + '\')">Envoyer</button>' : '') + '</span></div>').join('')
+      + d.rapports.map((r) => '<div class="kv" style="flex-direction:column;align-items:stretch;gap:8px"><span><b>' + esc(r.numero) + '</b> · ' + dateCourte(r.date) + ' · ' + esc(r.technicien) + (r.nombrePhotos ? ' · ' + r.nombrePhotos + ' photo' + (r.nombrePhotos > 1 ? 's' : '') : '') + '<br><small style="color:#5A6585">' + esc(String(r.constat).slice(0, 90)) + '</small></span>'
+        + (r.statut ? '<br><span style="display:inline-block;margin-top:6px;width:auto" class="pastille ' + (r.statut === 'Envoyé' ? 'p-ok' : 'p-moyenne') + '">' + (r.statut === 'Envoyé' ? 'Envoyé le ' + dateCourte(r.envoyeLe) : 'À relire par le DGA') + '</span>' : '') + '</span>'
+        + '<span style="display:flex;gap:6px;flex-wrap:wrap"><button class="puce" onclick="pdfRapport(\'' + esc(r.numero) + '\')">PDF</button>' + (d.peutGerer ? '<button class="puce" onclick="relireRapport(' + d.rapports.indexOf(r) + ')">Relire</button><button class="puce" onclick="envoyerRapport(\'' + esc(r.numero) + '\')">Envoyer</button>' : '') + '</span></div>'
+        + '<div id="relire' + d.rapports.indexOf(r) + '"></div>').join('')
       + '<button class="bouton second" onclick="aller(\'rapport\',{numero:\'' + esc(a.NumeroAffaire) + '\'})">+ Nouveau rapport</button></div>'
       + (d.peutGerer ? carteMessage(d) : '')
+      + carteHistorique(d)
       + '<form class="carte" onsubmit="enregistrerSuivi(event)"><b style="font-size:13px;color:#5A6585">SUIVI (alimente le point de situation)</b>'
       + '<div class="champ"><label for="av">Avancement : <span id="avv">' + (Number(a.Avancement) || 0) + '</span> %</label><input id="av" type="range" min="0" max="100" step="10" value="' + (Number(a.Avancement) || 0) + '" oninput="$(\'avv\').textContent=this.value"></div>'
       + '<div class="champ"><label for="pa">Prochaine action</label><input id="pa" value="' + esc(a.ProchaineAction) + '" placeholder="Ex. remplacer le compresseur"></div>'
@@ -391,7 +404,7 @@ function rafraichirAffaire() { ECRANS.affaire({ numero: numeroCourant() }); }
 function changerStatut(s) { if (!s) return; appel('changerStatut', { numero: numeroCourant(), statut: s }).then(() => { toast('Statut mis à jour'); rafraichirAffaire(); }).catch(echec); }
 function carteMessage(d) {
   const t = '<b style="font-size:13px;color:#5A6585">ÉCRIRE AU CLIENT</b>';
-  const histo = d.messages.length ? d.messages.map((m) => '<div class="kv"><span><b>' + dateCourte(m.date) + '</b> · ' + esc(m.par) + '<br><small style="color:#5A6585;white-space:pre-line">' + esc(String(m.texte).slice(0, 160)) + '</small></span></div>').join('') : '';
+  const histo = ''; // les mails envoyés apparaissent dans l'historique de la fiche
   return '<div class="carte"><div class="ligne">' + t + '<span style="font-size:13px;color:#5A6585">' + d.messages.length + ' envoyé' + (d.messages.length > 1 ? 's' : '') + '</span></div>' + histo
     + '<details><summary style="font-weight:600;color:#2563EB;min-height:44px;display:flex;align-items:center">+ Nouveau message</summary>'
     + '<form onsubmit="envoyerMessageUI(event)" style="display:flex;flex-direction:column;gap:10px">'
@@ -402,7 +415,57 @@ function carteMessage(d) {
     + '<textarea id="mtexte" rows="5" placeholder="Ton message (Bonjour et la signature sont ajoutés tout seuls)" aria-label="Message" required></textarea>'
     + '<button class="bouton" type="submit">Envoyer le mail</button></form></details></div>';
 }
-function modeleMessage(i) { $('mtexte').value = etat.affaire.modelesMessage[i].texte; $('mtexte').focus(); }
+function modeleMessage(i) { $('mtexte').value = i === 0 ? etat.affaire.texteProgramme : etat.affaire.modelesMessage[i].texte; $('mtexte').focus(); }
+// ---------- Circuit : appel, programmation, relecture, historique ----------
+function cartePlanification(d) {
+  const a = d.affaire, t = '<b style="font-size:13px;color:#5A6585">CONFIRMATION ET PROGRAMMATION</b>';
+  const date = a.DelaiPrevu ? new Date(a.DelaiPrevu).toISOString().slice(0, 10) : '';
+  const heure = String(a.HeureIntervention || '').replace(/^'/, '');
+  const choisis = String(a.Agent || '').split(/,\s*/);
+  return '<div class="carte">' + t
+    + (a.DelaiPrevu && a.Agent ? '<div style="font-size:14px;background:#EEF2FF;border-radius:12px;padding:10px 12px">Programmée le <b>' + dateCourte(a.DelaiPrevu) + (heure ? ' à ' + esc(heure) : '') + '</b> avec <b>' + esc(a.Agent) + '</b></div>' : '')
+    + '<details' + (a.Statut === 'Nouvelle demande' || !a.Statut ? ' open' : '') + '><summary style="font-weight:600;color:#2563EB;min-height:44px;display:flex;align-items:center">1. Appel au client pour confirmer</summary><div style="display:flex;flex-direction:column;gap:10px">'
+    + '<input id="apc" placeholder="Personne appelée (ex. M. MONNEY, agence)" aria-label="Personne appelée">'
+    + '<div class="puces" id="apr">' + ['Confirmée', 'Injoignable', 'Reportée'].map((x, i) => '<button type="button" class="puce ' + (i ? '' : 'on') + '" onclick="choisir(\'apr\',this)">' + x + '</button>').join('') + '</div>'
+    + '<input id="apn" placeholder="Note (facultatif)" aria-label="Note"><button class="bouton second" onclick="noterAppelUI()">Noter l\'appel</button></div></details>'
+    + '<details' + (a.Statut === 'Confirmée par le client' ? ' open' : '') + '><summary style="font-weight:600;color:#2563EB;min-height:44px;display:flex;align-items:center">2. Programmer l\'intervention</summary><div style="display:flex;flex-direction:column;gap:10px">'
+    + '<div class="deux"><div class="champ"><label for="prd">Jour</label><input id="prd" type="date" value="' + date + '"></div><div class="champ"><label for="prh">Heure</label><input id="prh" type="time" value="' + esc(heure) + '"></div></div>'
+    + '<b style="font-size:13px">Techniciens</b>' + d.techniciens.map((x) => '<label style="display:flex;gap:10px;align-items:center;margin:0"><input type="checkbox" class="ptech" value="' + esc(x.email) + '"' + (choisis.indexOf(x.nom) !== -1 ? ' checked' : '') + '> ' + esc(x.nom) + (x.fonction ? ' <small style="color:#5A6585">· ' + esc(x.fonction) + '</small>' : '') + '</label>').join('')
+    + '<button class="bouton" onclick="programmerUI()">Programmer et prévenir</button><small style="color:#5A6585">Les techniciens choisis et le DGA reçoivent un mail.</small></div></details></div>';
+}
+function noterAppelUI() {
+  appel('noterAppel', { numero: numeroCourant(), appel: { contact: $('apc').value.trim(), resultat: choix('apr'), note: $('apn').value.trim() } })
+    .then(() => { toast('Appel noté'); rafraichirAffaire(); }).catch(echec);
+}
+function programmerUI() {
+  const techniciens = Array.from(document.querySelectorAll('.ptech:checked')).map((x) => x.value);
+  appel('programmer', { numero: numeroCourant(), programmation: { date: $('prd').value, heure: $('prh').value, techniciens } })
+    .then((q) => { toast('Programmée le ' + q); rafraichirAffaire(); }).catch(echec);
+}
+function marquerAFacturer(oui) {
+  if (oui && !confirm('Cette intervention sortira du contrat : rapport, proforma puis facture. Continuer ?')) return;
+  appel('aFacturer', { numero: numeroCourant(), oui }).then(() => { toast(oui ? 'Marquée à facturer' : 'Remise sous contrat'); rafraichirAffaire(); }).catch(echec);
+}
+function relireRapport(i) {
+  const r = etat.affaire.rapports[i], zone = $('relire' + i);
+  if (zone.innerHTML) { zone.innerHTML = ''; return; }
+  const champ = (id, nom, v) => '<div class="champ"><label for="' + id + '">' + nom + '</label><textarea id="' + id + '" rows="3">' + esc(v) + '</textarea></div>';
+  zone.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;padding:8px 0">' + champ('rc' + i, 'Constat', r.constat) + champ('ra' + i, 'Cause', r.cause)
+    + champ('rt' + i, 'Travaux réalisés', r.travaux) + champ('rr' + i, 'Recommandation', r.recommandation)
+    + '<div class="deux"><button class="bouton second" onclick="corrigerRapport(' + i + ')">Enregistrer</button><button class="bouton" onclick="corrigerRapport(' + i + ',true)">Enregistrer et envoyer</button></div></div>';
+}
+function corrigerRapport(i, envoyer) {
+  const r = etat.affaire.rapports[i];
+  appel('modifierRapport', { rapport: r.numero, champs: { constat: $('rc' + i).value, cause: $('ra' + i).value, travaux: $('rt' + i).value, recommandation: $('rr' + i).value } })
+    .then(() => { if (envoyer) envoyerRapport(r.numero); else { toast('Rapport corrigé'); rafraichirAffaire(); } }).catch(echec);
+}
+function carteHistorique(d) {
+  const lignes = (d.journal || []).map((j) => ({ date: j.date, texte: '<b>' + esc(j.type) + '</b> · ' + esc(j.detail), par: j.par }))
+    .concat((d.messages || []).map((m) => ({ date: m.date, texte: '<b>Mail au client</b> · ' + esc(String(m.texte).slice(0, 120)), par: m.par })))
+    .sort((x, y) => String(y.date).localeCompare(String(x.date)));
+  if (!lignes.length) return '';
+  return '<div class="carte"><b style="font-size:13px;color:#5A6585">HISTORIQUE</b>' + lignes.map((l) => '<div style="font-size:13px;border-left:3px solid #C7D2FE;padding:2px 0 2px 10px"><span style="color:#5A6585">' + dateCourte(l.date) + ' ' + new Date(l.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' · ' + esc(l.par) + '</span><br>' + l.texte + '</div>').join('') + '</div>';
+}
 function envoyerMessageUI(ev) {
   ev.preventDefault();
   const a = Array.from(document.querySelectorAll('.cdest:checked')).map((x) => x.value).concat($('mautre').value.split(/[,;\s]+/).filter(Boolean));
@@ -443,7 +506,7 @@ function ajouterDepense(ev) {
 function pdfRapport(numero) { appel('pdfRapport', { rapport: numero }).then((url) => window.open(url, '_blank')).catch(echec); }
 function envoyerRapport(numero) {
   if (!confirm('Envoyer le rapport ' + numero + ' au client ?')) return;
-  appel('envoyerRapport', { rapport: numero }).then((a) => toast('Rapport envoyé à ' + a)).catch(echec);
+  appel('envoyerRapport', { rapport: numero }).then((a) => { toast('Rapport envoyé à ' + a); if (etat.courant && etat.courant.ecran === 'affaire') rafraichirAffaire(); }).catch(echec);
 }
 
 // ---------- Rapport d'intervention ----------

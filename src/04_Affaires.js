@@ -8,6 +8,8 @@
 
 const STATUTS_AFFAIRE = {
   NOUVELLE_DEMANDE: 'Nouvelle demande',
+  CONFIRMEE: 'Confirmée par le client',
+  PROGRAMMEE: 'Programmée',
   DEVIS_A_REVOIR: 'Devis à revoir',
   DEVIS_VALIDE: 'Devis validé',
   EN_EXECUTION: 'En exécution',
@@ -26,7 +28,8 @@ function clientSousContrat(nomClient) {
 
 /** Affaire couverte par le contrat : maintenance curative ou préventive d'un client sous contrat. */
 function estSousContrat(affaire) {
-  return [TYPES_INTERVENTION.CURATIF, TYPES_INTERVENTION.PREVENTIF].indexOf(affaire.TypeIntervention) !== -1 && clientSousContrat(affaire.Client);
+  return [TYPES_INTERVENTION.CURATIF, TYPES_INTERVENTION.PREVENTIF].indexOf(affaire.TypeIntervention) !== -1
+    && String(affaire.AFacturer || '').toLowerCase() !== 'oui' && clientSousContrat(affaire.Client);
 }
 
 /** Clôture d'une affaire sous contrat (DG, DGA, ou chef d'équipe avec le droit Planning) : il faut au moins un rapport. */
@@ -34,7 +37,7 @@ function cloturerAffaireContrat(numeroAffaire) {
   exigerRoleOuDroit([ROLES.DG, ROLES.DGA], DROITS.PLANNING);
   const r = trouverAffaire(numeroAffaire);
   const a = ligneVersObjet(r.entetes, r.ligne);
-  if (!estSousContrat(a)) throw new Error('Cette affaire n\'est pas couverte par un contrat de maintenance : elle passe par proforma et facture.');
+  if (!estSousContrat(a)) throw new Error('Cette affaire n\'est pas couverte par le contrat (ou elle est marquée à facturer) : elle passe par proforma et facture.');
   if (!rapportsDeLAffaire(numeroAffaire).length) throw new Error('Fais d\'abord le rapport d\'intervention.');
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.AFFAIRES);
   majCellule(feuille, r, 'Statut', STATUTS_AFFAIRE.CLOTUREE);
