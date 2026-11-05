@@ -35,6 +35,8 @@ function creerRapport(numeroAffaire, details) {
     JSON.stringify(controles), JSON.stringify(idsPhotos), utilisateur.email,
   ]);
   const ligneRapport = trouverLigneParValeur(feuille, 'NumeroRapport', numero);
+  // Compartiments (observations, à faire au prochain passage, photos) et points du site cochés comme faits.
+  enregistrerSuiviRapport(numero, details.sections, details.faits);
   if (details.piecesHorsContrat) majCellule(feuille, ligneRapport, 'PiecesHorsContrat', String(details.piecesHorsContrat).trim());
   if (details.signature) {
     // Visa du client (agence) signé sur le téléphone du technicien.
@@ -84,6 +86,8 @@ function htmlRapportClient(numeroRapport) {
     const blob = DriveApp.getFileById(id).getBlob();
     return 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
   });
+  const suivi = suiviDuRapport(r);
+  const imageDrive = (id) => { try { const b = DriveApp.getFileById(id).getBlob(); return 'data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()); } catch (x) { return ''; } };
   const cellule = 'border:1px solid #9CA3AF;padding:5px 6px';
   const rubrique = (titre, texte) => texte
     ? '<p style="margin:10px 0 2px"><b style="font-size:10px;color:#0E5C8C;letter-spacing:.06em">' + titre + '</b><br>' + e(texte).replace(/\n/g, '<br>') + '</p>'
@@ -103,6 +107,11 @@ function htmlRapportClient(numeroRapport) {
         + controles.filter((c) => (c.section || '') === section).map((c) => '<tr><td style="' + cellule + '">' + e(c.element) + '</td><td style="' + cellule + ';text-align:center;font-weight:bold;color:' + (couleurs[c.etat] || '#1F2937') + '">' + e(c.etat) + '</td><td style="' + cellule + '">' + e(c.observation) + '</td></tr>').join('')
         + '</table>').join('')
       : '')
+    + suivi.sections.map((sec) => '<div style="margin-top:10px;border-left:3px solid #0E5C8C;padding-left:8px"><b style="font-size:11px;color:#0E5C8C">' + e(String(sec.section).toUpperCase()) + '</b>'
+      + (sec.observation ? '<br><b style="font-size:10px;color:#4B5563">Observations :</b> ' + e(sec.observation).replace(/\n/g, '<br>') : '')
+      + (sec.aFaire ? '<br><b style="font-size:10px;color:#B45309">À prévoir au prochain passage :</b> ' + e(sec.aFaire).replace(/\n/g, '<br>') : '')
+      + ((sec.photos || []).length ? '<table style="width:100%;margin-top:4px"><tr>' + sec.photos.map(imageDrive).filter(Boolean).map((src) => '<td style="width:50%;padding:3px;text-align:center"><img src="' + src + '" style="max-width:100%;max-height:200px"></td>').join('') + '</tr></table>' : '')
+      + '</div>').join('')
     + rubrique('TRAVAUX RÉALISÉS', r.TravauxRealises)
     + (photos.length
       ? '<table style="width:100%;margin-top:10px"><tr>' + photos.map((src, i) => '<td style="width:50%;padding:3px;text-align:center;vertical-align:middle"><img src="' + src + '" style="max-width:100%;max-height:240px"></td>').join('') + '</tr></table>'

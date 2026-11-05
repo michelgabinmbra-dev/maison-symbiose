@@ -188,13 +188,15 @@ function ficheVisite(numeroAffaire) {
   return {
     affaire: { numero: a.NumeroAffaire, client: a.Client, site: a.Site, groupe: a.Groupe, titre: a.Titre },
     sections: SECTIONS_PREVENTIF, checklist: checklistPreventif(), releves: RELEVES_GROUPE, etats: ETATS_CONTROLE,
+    historique: historiqueSite(a.Client, a.Site),
   };
 }
 
 /**
  * Enregistre la fiche de visite préventive comme rapport (domaine « Maintenance préventive »).
  * fiche : {controles: [{section, element, etat, observation}], releves: {heures, ...}, rapport,
- * recommandation, debut, fin, photos: [base64]}. Renvoie le numéro du rapport.
+ * recommandation, debut, fin, photos: [base64], sections: [{section, observation, aFaire, photos}],
+ * faits: [ids des points à faire du site réalisés]}. Renvoie le numéro du rapport.
  */
 function enregistrerVisitePreventive(numeroAffaire, fiche) {
   const utilisateur = exigerRole(Object.values(ROLES));
@@ -220,6 +222,9 @@ function enregistrerVisitePreventive(numeroAffaire, fiche) {
     recommandation: fiche.recommandation || '',
     controles,
     photos: fiche.photos || [],
+    // Par compartiment : observations, à faire au prochain passage, photos ; et points du site faits.
+    sections: (fiche.sections || []).filter((x) => x && SECTIONS_PREVENTIF.indexOf(x.section) !== -1),
+    faits: fiche.faits || [],
   });
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.RAPPORTS);
   majCellule(feuille, trouverLigneParValeur(feuille, 'NumeroRapport', numero), 'Mesures', JSON.stringify(releves));

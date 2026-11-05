@@ -40,6 +40,8 @@ function traiterMailsEntrants() {
   });
   // Même déclencheur (toutes les 15 min) : relances si une demande ou un rapport traîne.
   try { verifierDelais(); } catch (e) { Logger.log('Relances : ' + e); }
+  // Le samedi à partir de 18 h : planning de la semaine à chaque technicien (une fois).
+  try { verifierPlanningHebdo(); } catch (e) { Logger.log('Planning hebdo : ' + e); }
 }
 
 function creerDemandeDepuisMail(thread) {

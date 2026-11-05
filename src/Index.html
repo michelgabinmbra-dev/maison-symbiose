@@ -305,12 +305,62 @@ ECRANS.accueil = function () {
       + (voitFinances() ? '<button class="item" onclick="aller(\'materiel\')"><span class="ico vert">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Matériel et outils</b><small>Je prends, je rends, outils non rendus</small></span></button>' : '')
       + '<button class="item" onclick="aller(\'preventif\')"><span class="ico bleu">' + svg('bouclier', 22, '#fff') + '</span><span class="txt"><b>Maintenance préventive</b><small>Visites de mon groupe, fiche et rapport</small></span>' + svg('droite', 20, '#5A6585') + '</button>'
       + (aDesReglages() ? '<button class="item" onclick="aller(\'reglages\')"><span class="ico violet">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Réglages</b><small>' + (estChef() ? 'Équipe et codes, clients, sites, véhicules, stock' : [aLePlanning() ? 'sites' : '', MOI.role === 'VEHICULES' ? 'véhicules' : '', MOI.role === 'STOCK' ? 'matériel, seuils, outils' : ''].filter(Boolean).join(', ').replace(/^./, (c) => c.toUpperCase())) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>' : '')
+      + (d.mesMissions && d.mesMissions.length ? '<div class="ligne"><h2>Mes missions · ' + d.mesMissions.length + '</h2><a href="#" onclick="aller(\'missions\');return false">Tout voir</a></div>' + d.mesMissions.slice(0, 4).map(carteMission).join('') : '')
+      + (MOI.role !== 'DG' && MOI.role !== 'DGA' && !(d.mesMissions || []).length ? '<button class="item" onclick="aller(\'missions\')"><span class="ico vert">' + svg('liste', 22, '#fff') + '</span><span class="txt"><b>Mes missions</b><small>Planning de la semaine, urgences, historique des sites</small></span>' + svg('droite', 20, '#5A6585') + '</button>' : '')
       + '<div class="ligne"><h2>Urgences, tous clients</h2><a href="#" onclick="racine(\'affaires\');return false">Tout voir</a></div>'
       + (d.rapportsARelire && d.rapportsARelire.length ? '<h2>Rapports à relire · ' + d.rapportsARelire.length + '</h2>' + d.rapportsARelire.map((r) => '<button class="item" onclick="aller(\'affaire\',{numero:\'' + esc(r.affaire) + '\'})"><span class="ico jaune">' + svg('liste', 22, '#fff') + '</span><span class="txt"><b>' + esc(r.numero) + ' · ' + esc(r.client) + '</b><small>' + esc(r.technicien) + ' · ' + esc(r.titre) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>').join('') : '')
       + (d.urgences.length ? d.urgences.map(carteAffaire).join('') : '<div class="vide">Aucune affaire en cours.</div>')
       + '</div>', 'accueil');
   }).catch(echec);
 };
+
+// ---------- Mes missions ----------
+function jourMission(m) {
+  if (!m.date) return 'Jour à caler';
+  return new Date(m.date).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' }) + (m.heure ? ' · ' + esc(m.heure) : '');
+}
+function carteMission(m) {
+  const cible = m.preventif ? "aller('visite',{numero:'" + esc(m.numero) + "'})" : "aller('affaire',{numero:'" + esc(m.numero) + "'})";
+  return '<button class="item" onclick="' + cible + '"><span class="ico ' + (m.urgence ? 'rouge' : (m.preventif ? 'bleu' : 'jaune')) + '">' + svg(m.preventif ? 'bouclier' : 'outil', 22, '#fff') + '</span>'
+    + '<span class="txt"><b>' + esc(m.client) + (m.site ? ' · ' + esc(m.site) : '') + '</b><small>' + (m.urgence ? '<b style="color:#B91C1C">URGENCE</b> · ' : '') + jourMission(m) + ' · ' + esc(m.titre)
+    + (m.aFaire ? ' · <b style="color:#B45309">' + m.aFaire + ' à faire</b>' : '') + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>';
+}
+ECRANS.missions = function () {
+  appel('ecranMissions').then((d) => {
+    const urg = d.missions.filter((m) => m.urgence), dat = d.missions.filter((m) => !m.urgence && m.date), sans = d.missions.filter((m) => !m.urgence && !m.date);
+    const bloc = (titre, l) => (l.length ? '<h2>' + titre + ' · ' + l.length + '</h2>' + l.map(carteMission).join('') : '');
+    rendre(entete('Mes missions', 'Touche une mission : historique du site, puis ton rapport')
+      + '<div class="section">'
+      + (d.missions.length ? bloc('Urgences', urg) + bloc('Programmé', dat) + bloc('Sites à faire', sans) : '<div class="vide">Aucune mission pour le moment.</div>')
+      + '<div class="carte" style="font-size:13px;color:#5A6585">Ton planning de la semaine arrive aussi par mail le samedi soir.</div>'
+      + (d.peutEnvoyerPlanning ? '<button class="bouton second" onclick="envoyerPlanningsUI(this)">Envoyer le planning aux techniciens maintenant</button>' : '')
+      + '</div>', null);
+  }).catch(echec);
+};
+function envoyerPlanningsUI(b) {
+  if (!confirm('Envoyer maintenant à chaque technicien son planning (missions programmées, sites à faire, urgences) ?')) return;
+  b.disabled = true;
+  appel('envoyerPlannings').then((r) => { b.disabled = false; toast('Planning envoyé à ' + (r.envoyes.length ? r.envoyes.join(', ') : 'personne (aucune mission)')); }).catch((e) => { b.disabled = false; echec(e); });
+}
+/** Historique du site : points encore à faire (cochables pendant un rapport) et derniers passages. */
+function carteSite(h, cocher, sauf) {
+  if (!h || (!h.passages.length && !h.aFaire.length)) return '';
+  const points = h.aFaire.filter((p) => !sauf || sauf.indexOf(p.section) === -1);
+  return '<div class="carte" style="gap:8px;border:1.5px solid #FCD34D"><b style="font-size:13px;color:#5A6585">HISTORIQUE DU SITE</b>'
+    + (points.length ? '<div style="font-size:13px;font-weight:700;color:#B45309">À faire (laissé aux derniers passages)</div>' + points.map((p) => lignePoint(p, cocher)).join('')
+      : (h.aFaire.length ? '<div style="font-size:13px;color:#B45309"><b>' + h.aFaire.length + ' point(s) à faire</b>, rangés dans chaque compartiment ci-dessous : coche-les quand c\'est fait.</div>' : '<div style="font-size:13px;color:#047857">Rien en attente sur ce site.</div>'))
+    + (h.passages.length ? '<details><summary style="font-weight:600;color:#2563EB;min-height:40px;display:flex;align-items:center">Derniers passages (' + h.passages.length + ')</summary>'
+      + h.passages.map((x) => '<div class="kv" style="flex-direction:column;align-items:stretch;gap:2px"><span><b>' + dateCourte(x.date) + '</b> · ' + esc(LIBELLES_TYPE[x.type] || x.type || '') + ' · ' + esc(x.par) + '</span>'
+        + '<small style="color:#5A6585">' + esc(String(x.constat || '').slice(0, 140)) + (x.travaux ? ' — ' + esc(String(x.travaux).slice(0, 100)) : '') + '</small>'
+        + x.observations.map((o) => '<small style="color:#5A6585">' + esc(o.section) + ' : ' + esc(o.texte) + '</small>').join('') + '</div>').join('') + '</details>' : '')
+    + '</div>';
+}
+function lignePoint(p, cocher) {
+  const txt = '<span><b>' + esc(p.section) + '</b> · ' + esc(p.texte) + ' <small style="color:#5A6585">(' + esc(p.par) + ', ' + dateCourte(p.date) + ')</small></span>';
+  return cocher ? '<label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;margin:0;color:#0F1733"><input type="checkbox" class="pfait" value="' + esc(p.id) + '" style="margin-top:2px"> ' + txt + '</label>'
+    : '<div style="font-size:14px">• ' + txt + '</div>';
+}
+function pointsFaits() { return Array.from(document.querySelectorAll('.pfait:checked')).map((c) => c.value); }
 
 // ---------- Affaires ----------
 ECRANS.affaires = function (p) {
@@ -358,12 +408,14 @@ ECRANS.affaire = function (p) {
       + (d.peutGerer ? '<div class="puces">' + ['Élevée', 'Moyenne', 'Faible'].map((pr) => '<button class="puce ' + (a.Priorite === pr ? 'on' : '') + '" onclick="definirPriorite(\'' + pr + '\')">' + pr + '</button>').join('') + '</div>' : '')
       + '</div>'
       + (a.Description ? '<div class="carte"><b style="font-size:13px;color:#5A6585">DEMANDE</b><div style="font-size:14px;white-space:pre-line">' + esc(nettoyerMail(a.Description).slice(0, 600)) + '</div></div>' : '')
+      + carteSite(d.historique, false)
       + (d.peutPlanifier ? cartePlanification(d) : (a.DelaiPrevu && a.Agent ? '<div class="carte"><b style="font-size:13px;color:#5A6585">PROGRAMMATION</b><div style="font-size:14px">' + dateCourte(a.DelaiPrevu) + (a.HeureIntervention ? ' à ' + esc(String(a.HeureIntervention).replace(/^'/, '')) : '') + ' · ' + esc(a.Agent) + '</div></div>' : ''))
       + '<div class="carte"><div class="ligne"><b style="font-size:13px;color:#5A6585">RAPPORTS D\'INTERVENTION</b><span style="font-size:13px;color:#5A6585">' + d.rapports.length + '</span></div>'
       + d.rapports.map((r) => '<div class="kv" style="flex-direction:column;align-items:stretch;gap:8px"><span><b>' + esc(r.numero) + '</b> · ' + dateCourte(r.date) + ' · ' + esc(r.technicien) + (r.nombrePhotos ? ' · ' + r.nombrePhotos + ' photo' + (r.nombrePhotos > 1 ? 's' : '') : '') + '<br><small style="color:#5A6585">' + esc(String(r.constat).slice(0, 90)) + '</small></span>'
         + (r.signe ? '<br><small style="color:#047857">✓ Visé par ' + esc(r.signataire) + '</small>' : '') + (r.statut ? '<br><span style="display:inline-block;margin-top:6px;width:auto" class="pastille ' + (r.statut === 'Envoyé' ? 'p-ok' : 'p-moyenne') + '">' + (r.statut === 'Envoyé' ? 'Envoyé le ' + dateCourte(r.envoyeLe) : 'À relire par le DGA') + '</span>' : '') + '</span>'
         + '<span style="display:flex;gap:6px;flex-wrap:wrap"><button class="puce" onclick="pdfRapport(\'' + esc(r.numero) + '\')">PDF</button>' + (d.peutGerer ? '<button class="puce" onclick="relireRapport(' + d.rapports.indexOf(r) + ')">Relire</button><button class="puce" onclick="envoyerRapport(\'' + esc(r.numero) + '\')">Envoyer</button>' : '') + '</span></div>'
         + '<div id="relire' + d.rapports.indexOf(r) + '"></div>').join('')
+      + (a.TypeIntervention === 'Préventif' ? '<button class="bouton" onclick="aller(\'visite\',{numero:\'' + esc(a.NumeroAffaire) + '\'})">Fiche de maintenance (3 compartiments)</button>' : '')
       + '<button class="bouton second" onclick="aller(\'rapport\',{numero:\'' + esc(a.NumeroAffaire) + '\'})">+ Nouveau rapport</button></div>'
       + (d.peutGerer ? carteMessage(d) : '')
       + carteHistorique(d)
@@ -515,7 +567,7 @@ ECRANS.rapport = function (p) {
   const d = etat.affaire, a = d.affaire;
   etat.photosRapport = [];
   rendre(entete('Rapport d\'intervention', esc(a.NumeroAffaire) + ' · ' + esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : ''))
-    + '<form class="section" onsubmit="enregistrerRapport(event)"><div class="carte" style="gap:14px">'
+    + '<form class="section" onsubmit="enregistrerRapport(event)">' + carteSite(d.historique, true) + '<div class="carte" style="gap:14px">'
     + '<div class="champ"><label>Domaine</label><div class="puces" id="rdom">' + d.domaines.map((t, i) => '<button type="button" class="puce ' + (i ? '' : 'on') + '" onclick="choisir(\'rdom\',this)">' + esc(t) + '</button>').join('') + '</div></div>'
     + '<div class="champ"><label for="rloc">Localisation</label><input id="rloc" placeholder="Ex. salle serveur, 1er étage"></div>'
     + '<div class="champ"><label for="rcon">Constat</label><textarea id="rcon" required placeholder="Ce que tu as trouvé en arrivant"></textarea></div>'
@@ -526,7 +578,7 @@ ECRANS.rapport = function (p) {
     + '<div class="champ"><label for="rtra">Travaux réalisés</label><textarea id="rtra"></textarea></div>'
     + '<div class="champ"><label>Photos (2 au plus)</label><div id="rphotos" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>'
     + '<div class="photo" style="height:90px">' + svg('photo', 28, 'currentColor', 1.8) + '<b>Ajouter des photos</b><input type="file" accept="image/*" multiple aria-label="Ajouter des photos" onchange="ajouterPhotosRapport(this)"></div></div>'
-    + '<div class="champ"><label for="rrec">Recommandation</label><textarea id="rrec"></textarea></div></div>'
+    + '<div class="champ"><label for="rrec">À faire au prochain passage / recommandation</label><textarea id="rrec" placeholder="Un point par ligne. Ex. changer l\'ampoule, faire la vidange"></textarea></div></div>'
     + '<div class="carte" style="gap:10px"><label style="display:flex;gap:10px;align-items:center;margin:0;font-size:14px;color:#0F1733"><input type="checkbox" id="rhc" onchange="$(\'rhcz\').style.display=this.checked?\'block\':\'none\'"> Il faut des pièces ou travaux <b>hors contrat</b></label>'
     + '<div id="rhcz" style="display:none"><textarea id="rhct" placeholder="Lesquels ? Ex. 1 compresseur 18 000 BTU, 2 m de tuyau cuivre"></textarea><small style="color:#B45309">Le DGA est alerté pour faire la proforma avant la pose.</small></div></div>'
     + '<div class="carte" style="gap:10px"><b style="font-size:13px;color:#5A6585">VISA DU CLIENT (AGENCE)</b>'
@@ -594,6 +646,7 @@ function enregistrerRapport(ev) {
     photos: etat.photosRapport.map((u) => u.split(',')[1]),
     piecesHorsContrat: $('rhc').checked ? ($('rhct').value.trim() || 'à préciser') : '',
     signature: etat.signe ? $('rsig').toDataURL('image/png').split(',')[1] : '', signataire: $('rsn').value.trim(),
+    faits: pointsFaits(),
   };
   if (etat.signe && !rapport.signataire) { toast('Indique le nom de la personne qui a signé'); return; }
   $('renv').disabled = true; $('renv').textContent = 'Envoi en cours…';
@@ -680,27 +733,49 @@ function enregistrerGroupesUI() {
 }
 ECRANS.visite = function (p) {
   appel('ficheVisite', { numero: p.numero }).then((d) => {
-    etat.visite = d; etat.photosRapport = []; etat.nbCtl = 0;
+    etat.visite = d; etat.photosRapport = []; etat.nbCtl = 0; etat.photosSec = d.sections.map(() => []);
     const a = d.affaire;
     let html = entete('Fiche de visite', esc(a.client) + (a.site ? ' · ' + esc(a.site) : '') + ' · ' + esc(a.groupe))
       + '<form class="section" onsubmit="enregistrerVisiteUI(event)">'
+      + carteSite(d.historique, true, d.sections)
       + '<div class="carte"><div class="deux"><div class="champ"><label for="vdb">Début</label><input id="vdb" type="time"></div><div class="champ"><label for="vfn">Fin</label><input id="vfn" type="time"></div></div></div>';
     d.sections.forEach((sec, k) => {
       html += '<div class="carte" style="gap:4px"><b style="font-size:13px;color:#5A6585">' + esc(sec.toUpperCase()) + '</b><div id="sec' + k + '">'
         + (d.checklist[sec] || []).map((el) => ligneControle(sec, el)).join('') + '</div>'
         + '<button type="button" class="bouton second" onclick="autrePoint(' + k + ')">+ Autre point</button>'
         + (sec === 'Groupe électrogène' ? '<div class="deux" style="margin-top:8px">' + d.releves.map((r) => '<div class="champ"><label for="rv_' + r[0] + '">' + esc(r[1]) + '</label><input id="rv_' + r[0] + '"' + (r[0] === 'heures' ? ' inputmode="numeric"' : '') + '></div>').join('') + '</div>' : '')
+        + blocCompartiment(sec, k)
         + '</div>';
     });
     html += '<div class="carte" style="gap:14px">'
       + '<div class="champ"><label for="vrap">Rapport de la visite</label><textarea id="vrap" placeholder="Facultatif : résumé fait automatiquement sinon"></textarea></div>'
-      + '<div class="champ"><label for="vrec">Recommandations</label><textarea id="vrec"></textarea></div>'
-      + '<div class="champ"><label>Photos (2 au plus)</label><div id="rphotos" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>'
+      + '<div class="champ"><label for="vrec">Recommandations générales</label><textarea id="vrec"></textarea></div>'
+      + '<div class="champ"><label>Photos générales (2 au plus)</label><div id="rphotos" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>'
       + '<div class="photo" style="height:90px">' + svg('photo', 28, 'currentColor', 1.8) + '<b>Ajouter des photos</b><input type="file" accept="image/*" multiple aria-label="Ajouter des photos" onchange="ajouterPhotosRapport(this)"></div></div>'
       + '<button class="bouton" type="submit" id="renv">Enregistrer la visite</button></div></form>';
     rendre(html, 'accueil');
   }).catch(echec);
 };
+function blocCompartiment(sec, k) {
+  const precedents = ((etat.visite.historique || {}).aFaire || []).filter((p) => p.section === sec);
+  return '<div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;padding-top:10px;border-top:2px solid #E6E9F2">'
+    + (precedents.length ? '<div style="background:#FFFBEB;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px"><b style="font-size:13px;color:#B45309">À faire, laissé au dernier passage</b>' + precedents.map((p) => lignePoint(p, true)).join('') + '</div>' : '')
+    + '<div class="champ"><label for="vobs' + k + '">Observations ' + esc(sec) + '</label><textarea id="vobs' + k + '" placeholder="Ce que tu as constaté"></textarea></div>'
+    + '<div class="champ"><label for="vaf' + k + '">À faire au prochain passage</label><textarea id="vaf' + k + '" placeholder="Un point par ligne. Ex. changer l\'ampoule, faire la vidange"></textarea></div>'
+    + '<div class="champ"><label>Photos ' + esc(sec) + ' (2 au plus)</label><div id="vph' + k + '" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>'
+    + '<div class="photo" style="height:80px">' + svg('photo', 26, 'currentColor', 1.8) + '<b>Prendre une photo</b><input type="file" accept="image/*" capture="environment" multiple aria-label="Photos ' + esc(sec) + '" onchange="ajouterPhotosSection(this,' + k + ')"></div></div></div>';
+}
+function ajouterPhotosSection(input, k) {
+  const fichiers = Array.from(input.files || []).slice(0, 2 - etat.photosSec[k].length);
+  if (input.files.length > fichiers.length) toast('2 photos au plus par compartiment');
+  Promise.all(fichiers.map((f) => reduireImage(f, 1024, 0.75))).then((urls) => {
+    etat.photosSec[k] = etat.photosSec[k].concat(urls); input.value = ''; afficherPhotosSection(k);
+  }).catch(() => toast('Photo illisible'));
+}
+function afficherPhotosSection(k) {
+  $('vph' + k).innerHTML = etat.photosSec[k].map((u, i) => '<div style="position:relative"><img src="' + u + '" alt="Photo ' + (i + 1) + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px">'
+    + '<button type="button" aria-label="Retirer la photo" onclick="etat.photosSec[' + k + '].splice(' + i + ',1);afficherPhotosSection(' + k + ')" style="position:absolute;top:4px;right:4px;width:28px;height:28px;min-height:0;border-radius:50%;border:0;background:rgba(15,23,51,.7);color:#fff;font-size:16px">×</button></div>').join('');
+}
 function ligneControle(section, element) {
   const i = etat.nbCtl++;
   return '<div class="ctlp" data-section="' + esc(section) + '" style="padding:8px 0;border-bottom:1px solid #E6E9F2;display:flex;flex-direction:column;gap:6px">'
@@ -719,7 +794,8 @@ function enregistrerVisiteUI(ev) {
     return { section: c.dataset.section, element: (el.value !== undefined ? el.value : el.textContent).trim(), etat: (c.querySelector('.puce.on') || {}).textContent || 'OK', observation: c.querySelector('.cobs').value.trim() };
   }).filter((c) => c.element);
   const releves = {}; etat.visite.releves.forEach((r) => { const v = $('rv_' + r[0]).value.trim(); if (v) releves[r[0]] = v; });
-  const fiche = { controles, releves, debut: $('vdb').value, fin: $('vfn').value, rapport: $('vrap').value.trim(), recommandation: $('vrec').value.trim(), photos: etat.photosRapport.map((u) => u.split(',')[1]) };
+  const sections = etat.visite.sections.map((sec, k) => ({ section: sec, observation: $('vobs' + k).value.trim(), aFaire: $('vaf' + k).value.trim(), photos: etat.photosSec[k].map((u) => u.split(',')[1]) }));
+  const fiche = { controles, releves, sections, faits: pointsFaits(), debut: $('vdb').value, fin: $('vfn').value, rapport: $('vrap').value.trim(), recommandation: $('vrec').value.trim(), photos: etat.photosRapport.map((u) => u.split(',')[1]) };
   $('renv').disabled = true; $('renv').textContent = 'Envoi en cours…';
   appel('enregistrerVisite', { numero: etat.visite.affaire.numero, fiche }).then((n) => { toast('Visite enregistrée, rapport ' + n); revenir(); })
     .catch((e) => { $('renv').disabled = false; $('renv').textContent = 'Enregistrer la visite'; echec(e); });

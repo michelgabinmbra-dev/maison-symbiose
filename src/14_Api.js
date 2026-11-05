@@ -54,6 +54,8 @@ const ACTIONS_API = {
   envoyerRapport: (a) => envoyerRapport(a.rapport),
   // Maintenance préventive par groupes
   ecranPreventif: () => ecranPreventif(),
+  ecranMissions: () => ecranMissions(),
+  envoyerPlannings: () => envoyerPlanningsMaintenant(),
   ficheVisite: (a) => ficheVisite(a.numero),
   planifierPreventif: (a) => planifierPreventif(a.details),
   enregistrerVisite: (a) => enregistrerVisitePreventive(a.numero, a.fiche),
@@ -128,6 +130,8 @@ function ecranAccueil() {
     urgences: listerUrgences().slice(0, 30).map(resumerAffaire),
     enLigne: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) !== -1 ? resumePresence().enLigne : null,
     rapportsARelire: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) !== -1 ? rapportsARelire() : [],
+    // Missions de la personne (pas pour le DG et le DGA, qui voient tout ailleurs).
+    mesMissions: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) === -1 ? missionsDe(utilisateur) : [],
   };
 }
 
@@ -183,6 +187,7 @@ function ecranAffaire(numero) {
     contacts: String(contactClient(affaire.Client) || '').split(/[,;\s]+/).filter(Boolean),
     modelesMessage: MODELES_MESSAGE,
     sujetMessage: sujetParDefaut(affaire),
+    historique: historiqueSite(affaire.Client, affaire.Site),
     peutCloturer: utilisateur.role === ROLES.DG || utilisateur.role === ROLES.DGA || aLeDroit(utilisateur, DROITS.PLANNING),
   };
 }

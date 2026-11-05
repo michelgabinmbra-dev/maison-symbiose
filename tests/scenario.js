@@ -153,3 +153,24 @@ console.log('rappel groupes mois suivant (reprise) :', JSON.stringify(groupesDuM
 console.log('feuille Groupes :', JSON.stringify(H.CLASSEUR.sheets['Groupes'].rows));
 console.log('Clients :', JSON.stringify(H.CLASSEUR.sheets['Clients'].rows));
 
+// missions des techniciens, planning du samedi, compartiments et historique du site
+etape('mes missions Koffi', () => api(sk, 'ecranMissions', {}).missions.map((m) => m.numero + ' ' + m.site + (m.urgence ? ' URG' : '') + ' ' + (m.date || 'sans date').slice(0, 10)));
+etape('accueil Koffi : missions', () => api(sk, 'ecranAccueil', {}).mesMissions.length);
+const rv2 = etape('visite Plateau avec compartiments', () => api(sk, 'enregistrerVisite', { numero: vis[1], fiche: { controles: [{ section: 'Climatisation', element: 'Filtres', etat: 'À surveiller' }],
+  sections: [{ section: 'Climatisation', observation: 'Filtres encrassés', aFaire: 'Changer les filtres\nNettoyer le condenseur', photos: [photo] }, { section: 'Groupe électrogène', observation: 'RAS', aFaire: 'Faire la vidange', photos: [] }, { section: 'Électricité', observation: '', aFaire: '', photos: [] }] } }));
+etape('historique Plateau', () => { const h = api(sk, 'ficheVisite', { numero: vis[1] }).historique; return [h.passages.length, h.aFaire.map((p) => p.section + ':' + p.texte)]; });
+const n4 = etape('incident Plateau', () => api(J, 'creerDemande', { client: 'AFG', site: 'Agence Plateau', titre: 'Clim en panne', typeIntervention: 'Curatif', source: 'Appel', priorite: 'Élevée' }));
+etape('fiche incident montre l\'historique', () => api(J, 'ecranAffaire', { numero: n4 }).historique.aFaire.length);
+etape('Koffi programmé sur l\'incident', () => api(jm, 'programmer', { numero: n4, programmation: { date: '2026-11-09', techniciens: ['koffi@symbiozci.com'] } }));
+const idsFaits = api(J, 'ecranAffaire', { numero: n4 }).historique.aFaire.filter((p) => /filtres/i.test(p.texte)).map((p) => p.id);
+etape('rapport incident : filtres faits', () => api(sk, 'creerRapport', { numero: n4, rapport: { domaine: 'Climatisation', constat: 'Clim HS', travaux: 'filtres changés', faits: idsFaits, photos: [] } }));
+etape('points restants', () => api(J, 'ecranAffaire', { numero: n4 }).historique.aFaire.map((p) => p.texte));
+etape('pdf compartiments', () => /À prévoir au prochain passage/.test(htmlRapportClient(rv2)));
+const n5 = etape('urgence Koffi', () => { const n = api(J, 'creerDemande', { client: 'UCP-FM', site: 'Branche 4', titre: 'Coupure', typeIntervention: 'Curatif', source: 'Appel', priorite: 'Élevée' }); api(jm, 'programmer', { numero: n, programmation: { date: '2026-11-10', techniciens: ['koffi@symbiozci.com'] } }); return n; });
+const nmp = H.MAILS.length;
+etape('pas de planning vendredi', () => verifierPlanningHebdo(new Date('2026-11-06T19:00:00Z')));
+etape('planning samedi 18 h', () => verifierPlanningHebdo(new Date('2026-11-07T18:15:00Z')));
+etape('une seule fois', () => verifierPlanningHebdo(new Date('2026-11-07T20:00:00Z')));
+etape('mail planning Koffi', () => H.MAILS.slice(nmp).filter((m) => /planning/i.test(m.subject)).map((m) => m.to + ' | ' + m.subject + '\n' + m.body).join('\n---\n'));
+etape('technicien ne peut pas envoyer le planning', () => { try { api(sk, 'envoyerPlannings', {}); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué'; } });
+console.log(H.MAILS.filter((m) => /Ton planning/.test(m.subject)).pop().body);
