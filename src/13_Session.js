@@ -36,7 +36,9 @@ function connexion(email, code) {
   const stocke = trouve ? String(trouve.ligne[entetes.indexOf('CodeAcces')] || '') : '';
   const actif = trouve && trouve.ligne[entetes.indexOf('Actif')] !== false;
   const estEmpreinte = /^[0-9a-f]{64}$/.test(stocke);
-  const valide = actif && stocke && (estEmpreinte ? stocke === empreinteCode(code) : stocke === code);
+  // Un code tapé à la main dans la feuille (ex. 0123) peut avoir perdu son zéro de tête.
+  const memeCodeEnClair = stocke === code || (/^\d+$/.test(code) && /^\d+$/.test(stocke) && Number(stocke) === Number(code));
+  const valide = actif && stocke && (estEmpreinte ? stocke === empreinteCode(code) : memeCodeEnClair);
   if (!valide) {
     cache.put(cleEssais, String(essais + 1), 15 * 60);
     throw new Error('Email ou code incorrect.');

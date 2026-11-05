@@ -70,7 +70,7 @@ function enregistrerMembre(m) {
   }
   const resultat = ecrireLigne(NOMS_FEUILLES.UTILISATEURS, 'Email', emailCle, {
     Nom: String(m.nom || '').trim(), Role: m.role, Actif: m.actif !== false, Droits: droits.join(', '),
-    Fonction: String(m.fonction || '').trim(), Telephone: String(m.telephone || '').trim(),
+    Fonction: String(m.fonction || '').trim(), Telephone: m.telephone ? "'" + String(m.telephone).trim() : '',
   });
   if (m.code) definirCodeAcces(emailCle, String(m.code));
   return resultat;
