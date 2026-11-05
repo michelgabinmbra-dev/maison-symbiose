@@ -11,7 +11,8 @@ etape('membre Marina', () => enregistrerMembre({ email: 'marinayapi@symbiozci.co
 etape('membre Koffi', () => enregistrerMembre({ email: 'koffi@symbiozci.com', nom: 'KOFFI', role: 'TECHNICIEN', code: '1111' }));
 etape('membre compta', () => enregistrerMembre({ email: 'compta@symbiozci.com', nom: 'Gertrude', role: 'COMPTABILITE', code: '2222' }));
 etape('membre Jean', () => enregistrerMembre({ email: 'jean@symbiozci.com', nom: 'Jean', role: 'STOCK', code: '3333' }));
-etape('membre Arnaud', () => enregistrerMembre({ email: 'arnaud@symbiozci.com', nom: 'Arnaud', role: 'VEHICULES', code: '4444' }));
+etape('membre Arnaud', () => enregistrerMembre({ email: 'arnaud@symbiozci.com', nom: 'Arnaud', role: 'VEHICULES', fonction: 'Technicien groupe électrogène / voitures', code: '4444' }));
+etape('membre Barbara', () => enregistrerMembre({ email: 'barbara@gmail.com', nom: 'Barbara', role: 'VEHICULES', fonction: 'Suivi des véhicules', code: '6666' }));
 etape('client AFG', () => enregistrerClientReglages({ nom: 'AFG', contacts: 'a@afgbank.ci; b@afgbank.ci', code: 'agb', pointHebdo: true }));
 etape('sites', () => ajouterSites('AFG', 'Agence Sikensi ; Sikensi\nAgence Plateau\nAgence Sikensi'));
 etape('vehicule', () => enregistrerVehiculeReglages({ immatriculation: 'aa-123-ci', marque: 'Toyota' }));
@@ -114,6 +115,7 @@ etape('historique messages', () => { const e = api(J, 'ecranAffaire', { numero: 
 etape('en ligne (DG)', () => { const d = api(J, 'enLigne', {}); return [d.enLigne, d.total, d.personnes.slice(0, 3).map((p) => p.nom + ':' + p.enLigne)]; });
 etape('compteur accueil', () => api(J, 'ecranAccueil', {}).enLigne);
 etape('en ligne refusé au technicien', () => { try { api(sk, 'enLigne', {}); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué'; } });
+etape('personnes des groupes (sans Barbara ni direction)', () => api(jm, 'ecranGroupes', {}).personnes.map((p) => p.nom));
 ['F3','F5','F8'].forEach((id) => { const t = Buffer.from(H.FILES[id].bytes).toString(); console.log(id, H.FILES[id].name, /RAPPORT DE MAINTENANCE|RAPPORT D'INTERVENTION|FACTURE/.exec(t)[0], 'imgs', (t.match(/<img/g)||[]).length); });
 console.log('rappel groupes mois suivant (reprise) :', JSON.stringify(groupesDuMois('2026-12')).slice(0,120));
 console.log('feuille Groupes :', JSON.stringify(H.CLASSEUR.sheets['Groupes'].rows));

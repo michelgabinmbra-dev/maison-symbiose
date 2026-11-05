@@ -96,9 +96,20 @@ function ecranGroupes(mois) {
       membres: String(g.Membres || '').split(/[,;\s]+/).filter(Boolean),
     })),
     personnes: lireLignes(NOMS_FEUILLES.UTILISATEURS)
-      .filter((u) => u.Email && u.Actif !== false && u.Role !== ROLES.COMPTABILITE)
+      .filter((u) => u.Email && u.Actif !== false && peutEtreDansUnGroupe(u))
       .map((u) => ({ email: u.Email, nom: u.Nom || u.Email })),
   };
+}
+
+/**
+ * Personnes proposées pour les groupes : le terrain seulement. La direction et la comptabilité
+ * n'y sont pas ; le suivi des véhicules non plus (Barbara, demande de Michel du 05/11), sauf
+ * s'il est aussi technicien (Gnagne Arnaud, technicien groupe électrogène).
+ */
+function peutEtreDansUnGroupe(u) {
+  if ([ROLES.DG, ROLES.DGA, ROLES.COMPTABILITE].indexOf(u.Role) !== -1) return false;
+  if (u.Role === ROLES.VEHICULES) return /techni/i.test(String(u.Fonction || ''));
+  return true;
 }
 
 function groupesDe(utilisateur) {
