@@ -28,6 +28,8 @@ const ACTIONS_API = {
   definirType: (a) => definirTypeAffaire(a.numero, a.type),
   cloturerContrat: (a) => cloturerAffaireContrat(a.numero),
   envoyerMessage: (a) => envoyerMessageClient(a.numero, a.message),
+  ping: () => null,
+  enLigne: () => personnesEnLigne(),
   mettreAJourSuivi: (a) => mettreAJourSuivi(a.numero, a.suivi),
   corrigerClient: (a) => corrigerClientAffaire(a.numero, a.client, a.site),
   changerStatut: (a) => changerStatutParChef(a.numero, a.statut),
@@ -85,6 +87,7 @@ const ACTIONS_API = {
 /** Seule fonction appelée par l'interface (avec connexion/deconnexion). */
 function api(jeton, action, args) {
   EMAIL_SESSION = resoudreSession(jeton);
+  try { noterPresence(EMAIL_SESSION); } catch (e) { /* la présence ne doit jamais bloquer l'appli */ }
   const fonction = ACTIONS_API[action];
   if (!fonction) {
     throw new Error('Action inconnue : ' + action);
@@ -119,6 +122,7 @@ function ecranAccueil() {
       enExecution: ouvertes.filter((a) => a.Statut === STATUTS_AFFAIRE.EN_EXECUTION).length,
     },
     urgences: listerUrgences().slice(0, 30).map(resumerAffaire),
+    enLigne: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) !== -1 ? resumePresence().enLigne : null,
   };
 }
 

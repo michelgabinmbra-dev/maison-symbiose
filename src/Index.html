@@ -78,6 +78,8 @@ input[type=checkbox]{min-height:0;width:20px;height:20px;padding:0;flex:none;acc
 .puces{display:flex;gap:8px;flex-wrap:wrap}
 .puce{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid #C9D0E3;background:#fff;color:var(--texte);font-weight:600;font-size:14px}
 .puce.on{border:none;background:linear-gradient(135deg,#2563EB,#7C3AED);color:#fff}
+.enligne{white-space:nowrap;flex:none;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;min-height:36px;margin-left:auto;margin-right:8px}
+.enligne i{width:8px;height:8px;border-radius:50%;background:#34D399;box-shadow:0 0 0 3px rgba(52,211,153,.3)}
 .etapes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
 .etapes i{height:6px;border-radius:3px;background:#D5DAE8}
 .etapes i.on{background:linear-gradient(90deg,#3B82F6,#8B5CF6)}
@@ -196,6 +198,8 @@ function initiales(nom) { return String(nom || '?').split(/\s+/).map((m) => m[0]
 
 // Retour du téléphone (geste ou touche) : chaque écran ouvert ajoute une étape à l'historique.
 const HISTO = window.google && google.script && google.script.history;
+// Signe de vie toutes les 2 minutes tant que l'appli est ouverte et visible (compteur « en ligne »).
+setInterval(() => { if (JETON && document.visibilityState === 'visible') try { google.script.run.withFailureHandler(() => {}).api(JETON, 'ping', {}); } catch (e) {} }, 120000);
 if (HISTO) HISTO.setChangeHandler(() => { if (etat.pile.length) revenir(); else if (etat.courant && etat.courant.ecran !== 'accueil') aller('accueil', {}, true); });
 function aller(ecran, params, sansHistorique) {
   if (!sansHistorique && etat.courant) {
@@ -289,6 +293,7 @@ ECRANS.accueil = function () {
     rendre('<div class="hero"><div class="orb a"></div><div class="orb b"></div>'
       + '<div class="ligne"><div style="display:flex;align-items:center;gap:12px"><div class="logo">' + svg('outil', 22, '#fff', 2.2) + '</div>'
       + '<div><div class="surtitre">' + esc(jour) + '</div><h1>Bonjour ' + esc(String(MOI.nom || '').split(' ')[0]) + '</h1></div></div>'
+      + (d.enLigne != null ? '<button class="enligne" onclick="aller(\'enligne\')" aria-label="Personnes en ligne"><i></i>' + d.enLigne + ' en ligne</button>' : '')
       + '<button class="avatar" aria-label="Mon compte" onclick="aller(\'compte\')"><span>' + esc(initiales(MOI.nom)) + '</span></button></div>'
       + '<div class="tuiles">'
       + '<button class="tuile t1" onclick="racine(\'affaires\')"><b>' + c.aTraiter + '</b><span>Demandes à traiter</span></button>'
@@ -406,6 +411,16 @@ function envoyerMessageUI(ev) {
   appel('envoyerMessage', { numero: numeroCourant(), message: { a: a.join(','), sujet: $('msujet').value, texte: $('mtexte').value } })
     .then((dest) => { toast('Mail envoyé à ' + dest); rafraichirAffaire(); }).catch(echec);
 }
+// ---------- En ligne ----------
+ECRANS.enligne = function () {
+  appel('enLigne').then((d) => {
+    const vu = (m) => m === null ? 'pas vu depuis 6 h' : m < 5 ? 'en ligne' : m < 60 ? 'vu il y a ' + m + ' min' : 'vu il y a ' + Math.floor(m / 60) + ' h';
+    rendre(entete('En ligne', d.enLigne + ' sur ' + d.total + ' personnes · mis à jour à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }))
+      + '<div class="section">' + d.personnes.map((p) => '<div class="item"><span class="ico ' + (p.enLigne ? 'vert' : 'pale') + '"><b style="color:' + (p.enLigne ? '#fff' : '#4F46E5') + ';font-size:14px">' + esc(initiales(p.nom)) + '</b></span><span class="txt"><b>' + esc(p.nom) + '</b><small>' + esc(p.fonction || p.role) + '</small></span>'
+        + '<span class="pastille ' + (p.enLigne ? 'p-ok' : 'p-vide') + '">' + vu(p.minutes) + '</span></div>').join('')
+      + '<button class="bouton second" onclick="ECRANS.enligne()">Actualiser</button></div>', null);
+  }).catch(echec);
+};
 function cloturerContrat() { appel('cloturerContrat', { numero: numeroCourant() }).then(() => { toast('Dossier clôturé'); rafraichirAffaire(); }).catch(echec); }
 function definirType(t) { appel('definirType', { numero: numeroCourant(), type: t }).then(() => { toast('Type : ' + LIBELLES_TYPE[t]); rafraichirAffaire(); }).catch(echec); }
 function definirPriorite(p) { appel('definirPriorite', { numero: numeroCourant(), priorite: p }).then(() => { toast('Priorité : ' + p); rafraichirAffaire(); }).catch(echec); }
