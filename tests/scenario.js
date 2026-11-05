@@ -133,6 +133,21 @@ etape('envoi rapport', () => { api(J, 'envoyerRapport', { rapport: r2 }); return
 etape('à facturer', () => { api(J, 'aFacturer', { numero: n2, oui: true }); const e = api(J, 'ecranAffaire', { numero: n2 }); return [e.sousContrat, e.aFacturer]; });
 etape('clôture refusée si à facturer', () => { try { api(J, 'cloturerContrat', { numero: n2 }); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué'; } });
 etape('historique', () => api(J, 'ecranAffaire', { numero: n2 }).journal.map((j) => j.type));
+// compléments : priorité, relances, pièces hors contrat, visa client
+const nm = H.MAILS.length;
+const n3 = etape('demande sans priorité', () => api(J, 'creerDemande', { client: 'UCP-FM', site: 'Branche 3', titre: 'TR: Clim', typeIntervention: 'Curatif', source: 'Mail' }));
+etape('alerte priorité', () => H.MAILS.slice(nm).map((m) => m.subject));
+etape('urgence', () => api(J, 'definirPriorite', { numero: n3, priorite: 'Élevée' }));
+DEBUT_RELANCES = new Date(Date.now() - 48 * 3600e3);
+const fa = getFeuilleDonnees(NOMS_FEUILLES.AFFAIRES); majCellule(fa, trouverAffaire(n3), 'DateCreation', new Date(Date.now() - 3 * 3600e3));
+const r3 = etape('rapport pièces + visa', () => api(sk, 'creerRapport', { numero: n2, rapport: { constat: 'compresseur HS', piecesHorsContrat: '1 compresseur 18000 BTU', signature: photo, signataire: 'M. KONE, chef d\'agence', photos: [] } }));
+const fr = getFeuilleDonnees(NOMS_FEUILLES.RAPPORTS); majCellule(fr, trouverLigneParValeur(fr, 'NumeroRapport', r3), 'Date', new Date(Date.now() - 25 * 3600e3));
+const nm2 = H.MAILS.length;
+etape('relances', () => verifierDelais());
+etape('mails de relance', () => H.MAILS.slice(nm2).map((m) => m.subject));
+etape('pas de double relance', () => verifierDelais());
+etape('fiche pièces', () => api(J, 'ecranAffaire', { numero: n2 }).rapports.filter((r) => r.pieces).map((r) => r.pieces + ' / visa ' + r.signataire));
+etape('pdf rapport avec visa', () => { api(J, 'pdfRapport', { rapport: r3 }); return /VISA DU CLIENT/.test(htmlRapportClient(r3)); });
 ['F3','F5','F8'].forEach((id) => { const t = Buffer.from(H.FILES[id].bytes).toString(); console.log(id, H.FILES[id].name, /RAPPORT DE MAINTENANCE|RAPPORT D'INTERVENTION|FACTURE/.exec(t)[0], 'imgs', (t.match(/<img/g)||[]).length); });
 console.log('rappel groupes mois suivant (reprise) :', JSON.stringify(groupesDuMois('2026-12')).slice(0,120));
 console.log('feuille Groupes :', JSON.stringify(H.CLASSEUR.sheets['Groupes'].rows));

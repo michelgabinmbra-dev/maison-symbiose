@@ -81,6 +81,10 @@ function creerDemande(details) {
     details.agent || '',
     0, '', '', '', new Date(),
   ]);
+  // La priorité est fixée par le DGA (ou le DG) : on les prévient, sauf visite préventive planifiée ou priorité déjà mise.
+  if (!details.priorite && details.source !== SOURCES_DEMANDE.PLANIFIE) {
+    try { alerterPrioriteAFixer(numero, details); } catch (e) { Logger.log('Alerte priorité non envoyée : ' + e); }
+  }
   return numero;
 }
 

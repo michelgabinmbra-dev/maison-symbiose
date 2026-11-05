@@ -44,6 +44,7 @@ function initialiserBaseDeDonnees() {
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.RAPPORTS, [
     'NumeroRapport', 'NumeroAffaire', 'Technicien', 'Date', 'Domaine', 'Localisation', 'Constat',
     'Cause', 'TravauxRealises', 'Recommandation', 'Controles', 'Photos', 'CreePar', 'Mesures', 'Statut', 'EnvoyeLe',
+    'PiecesHorsContrat', 'SignataireClient', 'SignatureClient',
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.GROUPES, ['NomGroupe', 'NomChef', 'ChefEmail', 'Membres', 'Zone', 'Actif', 'Mois']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.CHECKLIST_PREVENTIF, ['Section', 'Element']);

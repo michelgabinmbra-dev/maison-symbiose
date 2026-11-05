@@ -113,12 +113,15 @@ function modifierRapport(numeroRapport, c) {
 function signalerRapportARelire(numeroRapport, numeroAffaire, technicien) {
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.RAPPORTS);
   majCellule(feuille, trouverLigneParValeur(feuille, 'NumeroRapport', numeroRapport), 'Statut', STATUTS_RAPPORT.A_RELIRE);
-  noterJournal(numeroAffaire, TYPES_JOURNAL.RAPPORT, numeroRapport + ' fait par ' + technicien, technicien);
+  const rap = ligneVersObjet(trouverLigneParValeur(feuille, 'NumeroRapport', numeroRapport).entetes, trouverLigneParValeur(feuille, 'NumeroRapport', numeroRapport).ligne);
+  const pieces = String(rap.PiecesHorsContrat || '').trim();
+  noterJournal(numeroAffaire, TYPES_JOURNAL.RAPPORT, numeroRapport + ' fait par ' + technicien + (pieces ? ' · pièces hors contrat : ' + pieces : '') + (rap.SignatureClient ? ' · visé par ' + (rap.SignataireClient || 'le client') : ''), technicien);
   const r = trouverAffaire(numeroAffaire);
   const a = ligneVersObjet(r.entetes, r.ligne);
-  alerterRoles([ROLES.DGA], 'Rapport à relire : ' + a.Client + (a.Site ? ' · ' + a.Site : ''),
+  alerterRoles([ROLES.DGA], (pieces ? 'Pièces hors contrat à valider : ' : 'Rapport à relire : ') + a.Client + (a.Site ? ' · ' + a.Site : ''),
     technicien + ' a fait le rapport ' + numeroRapport + ' pour l\'affaire ' + numeroAffaire + ' (' + (a.Titre || '') + ').\n\n'
-    + 'Relis-le dans l\'application, corrige si besoin, puis envoie-le au client.');
+    + (pieces ? 'IL SIGNALE DES PIÈCES HORS CONTRAT : ' + pieces + '\nFais la proforma et obtiens l\'accord du client avant de les poser.\n\n' : '')
+    + 'Relis le rapport dans l\'application, corrige si besoin, puis envoie-le au client.');
 }
 
 const STATUTS_RAPPORT = { A_RELIRE: 'À relire', ENVOYE: 'Envoyé' };
@@ -130,4 +133,64 @@ function rapportsARelire() {
   return lireLignes(NOMS_FEUILLES.RAPPORTS).filter((r) => r.Statut === STATUTS_RAPPORT.A_RELIRE)
     .map((r) => ({ numero: r.NumeroRapport, affaire: r.NumeroAffaire, technicien: r.Technicien,
       client: (affaires[r.NumeroAffaire] || {}).Client || '', titre: String((affaires[r.NumeroAffaire] || {}).Titre || '').replace(/^((TR|RE)\s*:\s*)+/i, '') }));
+}
+
+/** Nouvelle demande sans priorité : le DGA et le DG la fixent. */
+function alerterPrioriteAFixer(numero, details) {
+  alerterRoles([ROLES.DGA, ROLES.DG], 'Nouvelle demande à prioriser : ' + details.client + (details.site ? ' · ' + details.site : ''),
+    'Demande ' + numero + ' : ' + String(details.titre || '').replace(/^((TR|RE)\s*:\s*)+/i, '') + '\n\n'
+    + 'Ouvre-la dans l\'application et fixe la priorité (Élevée, Moyenne, Faible) pour que l\'équipe la voie dans le bon ordre.');
+}
+
+const HEURES_RELANCE_CONFIRMATION = 2;
+const HEURES_RELANCE_PRIORITE = 2;
+const HEURES_RELANCE_RAPPORT = 24;
+// Les relances ne concernent que ce qui arrive après leur mise en service (pas de rafale sur l'existant).
+var DEBUT_RELANCES = new Date('2026-11-05T23:00:00Z');
+
+/**
+ * Relances (une seule fois par sujet), lancées toutes les 15 min avec la lecture des mails :
+ * - urgence (Élevée) ni confirmée ni programmée 2 h après son arrivée → DGA et planificateurs ;
+ * - demande toujours sans priorité 2 h après → DGA et DG ;
+ * - rapport « À relire » depuis 24 h → DGA et DG.
+ */
+function verifierDelais() {
+  const props = PropertiesService.getScriptProperties();
+  let deja = {};
+  try { deja = JSON.parse(props.getProperty('RELANCES') || '{}'); } catch (e) { deja = {}; }
+  const maintenant = Date.now();
+  const heures = (d) => (dateOuNull(d) ? (maintenant - dateOuNull(d).getTime()) / 3600e3 : 0);
+  const fermes = STATUTS_CLOS;
+  const nouveaux = {};
+  lireLignes(NOMS_FEUILLES.AFFAIRES).forEach((a) => {
+    if (!a.NumeroAffaire || fermes.indexOf(a.Statut) !== -1 || !(dateOuNull(a.DateCreation) > DEBUT_RELANCES)) return;
+    const lieu = a.Client + (a.Site ? ' · ' + a.Site : '');
+    const titre = String(a.Titre || '').replace(/^((TR|RE)\s*:\s*)+/i, '');
+    if (a.Priorite === PRIORITES.ELEVEE && [STATUTS_AFFAIRE.NOUVELLE_DEMANDE, ''].indexOf(a.Statut) !== -1
+      && heures(a.DateCreation) >= HEURES_RELANCE_CONFIRMATION && !deja['appel:' + a.NumeroAffaire]) {
+      const dest = emailsAvecDroit(DROITS.PLANNING);
+      const msg = 'L\'urgence ' + a.NumeroAffaire + ' (' + lieu + ' : ' + titre + ') est arrivée il y a plus de ' + HEURES_RELANCE_CONFIRMATION
+        + ' h et le client n\'a pas encore été appelé.\n\nAppelle-le, note l\'appel dans la fiche, puis programme l\'intervention.';
+      if (dest.length) MailApp.sendEmail(dest.join(','), '[Maison Symbiose] URGENCE sans réponse : ' + lieu, msg);
+      alerterRoles([ROLES.DGA], 'URGENCE sans réponse : ' + lieu, msg);
+      nouveaux['appel:' + a.NumeroAffaire] = maintenant;
+    }
+    if (!a.Priorite && a.Source !== SOURCES_DEMANDE.PLANIFIE && heures(a.DateCreation) >= HEURES_RELANCE_PRIORITE && !deja['prio:' + a.NumeroAffaire]) {
+      alerterRoles([ROLES.DGA, ROLES.DG], 'Demande toujours sans priorité : ' + lieu,
+        'La demande ' + a.NumeroAffaire + ' (' + titre + ') attend sa priorité depuis plus de ' + HEURES_RELANCE_PRIORITE + ' h.');
+      nouveaux['prio:' + a.NumeroAffaire] = maintenant;
+    }
+  });
+  lireLignes(NOMS_FEUILLES.RAPPORTS).forEach((r) => {
+    if (r.Statut !== STATUTS_RAPPORT.A_RELIRE || !(dateOuNull(r.Date) > DEBUT_RELANCES) || heures(r.Date) < HEURES_RELANCE_RAPPORT || deja['rap:' + r.NumeroRapport]) return;
+    alerterRoles([ROLES.DGA, ROLES.DG], 'Rapport en attente depuis 24 h : ' + r.NumeroRapport,
+      'Le rapport ' + r.NumeroRapport + ' (affaire ' + r.NumeroAffaire + ', ' + r.Technicien + ') attend d\'être relu et envoyé au client depuis plus de ' + HEURES_RELANCE_RAPPORT + ' h.');
+    nouveaux['rap:' + r.NumeroRapport] = maintenant;
+  });
+  if (Object.keys(nouveaux).length) {
+    // On oublie les relances de plus de 30 jours.
+    Object.keys(deja).forEach((k) => { if (maintenant - deja[k] > 30 * 864e5) delete deja[k]; });
+    props.setProperty('RELANCES', JSON.stringify(Object.assign(deja, nouveaux)));
+  }
+  return Object.keys(nouveaux);
 }

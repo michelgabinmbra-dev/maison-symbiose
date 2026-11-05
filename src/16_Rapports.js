@@ -34,6 +34,14 @@ function creerRapport(numeroAffaire, details) {
     details.constat, details.cause || '', details.travaux || '', details.recommandation || '',
     JSON.stringify(controles), JSON.stringify(idsPhotos), utilisateur.email,
   ]);
+  const ligneRapport = trouverLigneParValeur(feuille, 'NumeroRapport', numero);
+  if (details.piecesHorsContrat) majCellule(feuille, ligneRapport, 'PiecesHorsContrat', String(details.piecesHorsContrat).trim());
+  if (details.signature) {
+    // Visa du client (agence) signé sur le téléphone du technicien.
+    const idSignature = dossier.createFile(Utilities.newBlob(Utilities.base64Decode(details.signature), 'image/png', numero + '_visa_client.png')).getId();
+    majCellule(feuille, ligneRapport, 'SignatureClient', idSignature);
+    majCellule(feuille, ligneRapport, 'SignataireClient', String(details.signataire || '').trim());
+  }
 
   const affaire = trouverAffaire(numeroAffaire);
   if (!(Number(affaire.ligne[affaire.entetes.indexOf('Avancement')]) > 0)) {
@@ -50,6 +58,7 @@ function rapportsDeLAffaire(numeroAffaire) {
       numero: r.NumeroRapport, date: r.Date, technicien: r.Technicien, domaine: r.Domaine,
       constat: r.Constat, nombrePhotos: JSON.parse(r.Photos || '[]').length,
       cause: r.Cause || '', travaux: r.TravauxRealises || '', recommandation: r.Recommandation || '', localisation: r.Localisation || '',
+      pieces: r.PiecesHorsContrat || '', signataire: r.SignataireClient || '', signe: !!r.SignatureClient,
       statut: r.Statut || '', envoyeLe: r.EnvoyeLe instanceof Date ? r.EnvoyeLe.toISOString() : (r.EnvoyeLe || ''),
     }));
 }
@@ -99,9 +108,17 @@ function htmlRapportClient(numeroRapport) {
       ? '<table style="width:100%;margin-top:10px"><tr>' + photos.map((src, i) => '<td style="width:50%;padding:3px;text-align:center;vertical-align:middle"><img src="' + src + '" style="max-width:100%;max-height:240px"></td>').join('') + '</tr></table>'
       : '')
     + rubrique('RECOMMANDATION', r.Recommandation)
-    + '<table style="width:100%;margin-top:14px"><tr><td></td><td style="width:200px;text-align:center"><img src="' + IMAGES_ENTETE.signature + '" style="width:150px"></td></tr></table>';
+    + '<table style="width:100%;margin-top:14px"><tr><td style="vertical-align:top">' + visaClient(r) + '</td><td style="width:200px;text-align:center;vertical-align:top"><b style="font-size:10px;color:#0E5C8C">POUR SYMBIOSE</b><br><img src="' + IMAGES_ENTETE.signature + '" style="width:150px"></td></tr></table>';
 
   return cadreDocument(r.Domaine === 'Maintenance préventive' ? 'RAPPORT DE MAINTENANCE PRÉVENTIVE' : 'RAPPORT D\'INTERVENTION', numeroRapport, contenu);
+}
+
+/** Bloc « Visa du client » du PDF : nom et signature recueillis sur place (vide si l'agence n'a pas signé). */
+function visaClient(r) {
+  if (!r.SignatureClient) return '';
+  let src = '';
+  try { const b = DriveApp.getFileById(r.SignatureClient).getBlob(); src = 'data:image/png;base64,' + Utilities.base64Encode(b.getBytes()); } catch (e) { return ''; }
+  return '<b style="font-size:10px;color:#0E5C8C">VISA DU CLIENT</b><br>' + echapperHtml(r.SignataireClient || '') + '<br><img src="' + src + '" style="width:170px;max-height:80px">';
 }
 
 /** Relevés du groupe électrogène et horaires de la visite préventive (vide si aucun). */

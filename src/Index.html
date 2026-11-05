@@ -351,6 +351,7 @@ ECRANS.affaire = function (p) {
       + (d.sousContrat ? '<div style="font-size:13px;background:#ECFDF5;color:#065F46;border-radius:12px;padding:10px 12px"><b>Couvert par le contrat de maintenance ' + esc(a.Client) + '</b> : rien à facturer. Intervention, rapport, puis clôture.'
         + (d.peutGerer ? '<br><a href="#" onclick="marquerAFacturer(true);return false" style="color:#065F46;font-weight:700">Cette intervention sera facturée (hors contrat)</a>' : '') + '</div>'
         + (d.peutCloturer && a.Statut !== 'Clôturée (contrat)' ? '<button class="bouton" ' + (d.rapports.length ? '' : 'disabled title="Fais d\'abord le rapport" style="opacity:.5"') + ' onclick="cloturerContrat()">Clôturer le dossier' + (d.rapports.length ? '' : ' (après le rapport)') + '</button>' : '') : '')
+      + (d.rapports.filter((r) => r.pieces).length && !d.aFacturer ? '<div style="font-size:13px;background:#FFF7ED;color:#9A3412;border-radius:12px;padding:10px 12px"><b>Pièces hors contrat signalées</b> : ' + d.rapports.filter((r) => r.pieces).map((r) => esc(r.pieces) + ' (' + esc(r.technicien) + ')').join(' ; ') + (d.peutGerer && d.clientSousContrat ? '<br><a href="#" onclick="marquerAFacturer(true);return false" style="color:#9A3412;font-weight:700">Passer en « à facturer » et faire la proforma</a>' : '') + '</div>' : '')
       + (d.aFacturer ? '<div style="font-size:13px;background:#FFF7ED;color:#9A3412;border-radius:12px;padding:10px 12px"><b>À facturer, même sous contrat</b> : rapport, proforma puis facture.' + (d.peutGerer ? '<br><a href="#" onclick="marquerAFacturer(false);return false" style="color:#9A3412;font-weight:700">Remettre sous contrat</a>' : '') + '</div>' : '')
       + (d.peutGerer || d.voitFinances ? '<select aria-label="Changer le statut" onchange="changerStatut(this.value)"><option value="">Changer le statut…</option>' + d.statuts.map((s) => '<option>' + esc(s) + '</option>').join('') + '</select>' : '')
       + (d.peutGerer ? '<select aria-label="Type d\'intervention" onchange="definirType(this.value)">' + TYPES.map((t) => '<option value="' + t + '"' + ((a.TypeIntervention || 'Curatif') === t ? ' selected' : '') + '>' + LIBELLES_TYPE[t] + '</option>').join('') + '</select>' : '<p style="margin:0">Type : <b>' + esc(LIBELLES_TYPE[a.TypeIntervention] || a.TypeIntervention || '') + '</b></p>')
@@ -360,7 +361,7 @@ ECRANS.affaire = function (p) {
       + (d.peutPlanifier ? cartePlanification(d) : (a.DelaiPrevu && a.Agent ? '<div class="carte"><b style="font-size:13px;color:#5A6585">PROGRAMMATION</b><div style="font-size:14px">' + dateCourte(a.DelaiPrevu) + (a.HeureIntervention ? ' à ' + esc(String(a.HeureIntervention).replace(/^'/, '')) : '') + ' · ' + esc(a.Agent) + '</div></div>' : ''))
       + '<div class="carte"><div class="ligne"><b style="font-size:13px;color:#5A6585">RAPPORTS D\'INTERVENTION</b><span style="font-size:13px;color:#5A6585">' + d.rapports.length + '</span></div>'
       + d.rapports.map((r) => '<div class="kv" style="flex-direction:column;align-items:stretch;gap:8px"><span><b>' + esc(r.numero) + '</b> · ' + dateCourte(r.date) + ' · ' + esc(r.technicien) + (r.nombrePhotos ? ' · ' + r.nombrePhotos + ' photo' + (r.nombrePhotos > 1 ? 's' : '') : '') + '<br><small style="color:#5A6585">' + esc(String(r.constat).slice(0, 90)) + '</small></span>'
-        + (r.statut ? '<br><span style="display:inline-block;margin-top:6px;width:auto" class="pastille ' + (r.statut === 'Envoyé' ? 'p-ok' : 'p-moyenne') + '">' + (r.statut === 'Envoyé' ? 'Envoyé le ' + dateCourte(r.envoyeLe) : 'À relire par le DGA') + '</span>' : '') + '</span>'
+        + (r.signe ? '<br><small style="color:#047857">✓ Visé par ' + esc(r.signataire) + '</small>' : '') + (r.statut ? '<br><span style="display:inline-block;margin-top:6px;width:auto" class="pastille ' + (r.statut === 'Envoyé' ? 'p-ok' : 'p-moyenne') + '">' + (r.statut === 'Envoyé' ? 'Envoyé le ' + dateCourte(r.envoyeLe) : 'À relire par le DGA') + '</span>' : '') + '</span>'
         + '<span style="display:flex;gap:6px;flex-wrap:wrap"><button class="puce" onclick="pdfRapport(\'' + esc(r.numero) + '\')">PDF</button>' + (d.peutGerer ? '<button class="puce" onclick="relireRapport(' + d.rapports.indexOf(r) + ')">Relire</button><button class="puce" onclick="envoyerRapport(\'' + esc(r.numero) + '\')">Envoyer</button>' : '') + '</span></div>'
         + '<div id="relire' + d.rapports.indexOf(r) + '"></div>').join('')
       + '<button class="bouton second" onclick="aller(\'rapport\',{numero:\'' + esc(a.NumeroAffaire) + '\'})">+ Nouveau rapport</button></div>'
@@ -525,10 +526,27 @@ ECRANS.rapport = function (p) {
     + '<div class="champ"><label for="rtra">Travaux réalisés</label><textarea id="rtra"></textarea></div>'
     + '<div class="champ"><label>Photos (2 au plus)</label><div id="rphotos" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>'
     + '<div class="photo" style="height:90px">' + svg('photo', 28, 'currentColor', 1.8) + '<b>Ajouter des photos</b><input type="file" accept="image/*" multiple aria-label="Ajouter des photos" onchange="ajouterPhotosRapport(this)"></div></div>'
-    + '<div class="champ"><label for="rrec">Recommandation</label><textarea id="rrec"></textarea></div>'
-    + '<button class="bouton" type="submit" id="renv">Enregistrer le rapport</button></div></form>', 'affaires');
+    + '<div class="champ"><label for="rrec">Recommandation</label><textarea id="rrec"></textarea></div></div>'
+    + '<div class="carte" style="gap:10px"><label style="display:flex;gap:10px;align-items:center;margin:0;font-size:14px;color:#0F1733"><input type="checkbox" id="rhc" onchange="$(\'rhcz\').style.display=this.checked?\'block\':\'none\'"> Il faut des pièces ou travaux <b>hors contrat</b></label>'
+    + '<div id="rhcz" style="display:none"><textarea id="rhct" placeholder="Lesquels ? Ex. 1 compresseur 18 000 BTU, 2 m de tuyau cuivre"></textarea><small style="color:#B45309">Le DGA est alerté pour faire la proforma avant la pose.</small></div></div>'
+    + '<div class="carte" style="gap:10px"><b style="font-size:13px;color:#5A6585">VISA DU CLIENT (AGENCE)</b>'
+    + '<input id="rsn" placeholder="Nom et fonction de la personne qui signe" aria-label="Nom du signataire">'
+    + '<canvas id="rsig" style="width:100%;height:150px;border:1px dashed #9CA3AF;border-radius:12px;background:#fff;touch-action:none"></canvas>'
+    + '<div class="ligne"><small style="color:#5A6585">Signe avec le doigt (facultatif si personne n\'est présent).</small><button type="button" class="puce" onclick="effacerSignature()">Effacer</button></div></div>'
+    + '<div class="section" style="padding-top:0;padding-bottom:110px"><button class="bouton" type="submit" id="renv">Enregistrer le rapport</button></div></form>', 'affaires');
   ajouterControle();
+  preparerSignature();
 };
+function preparerSignature() {
+  const c = $('rsig'), r = c.getBoundingClientRect(), x = c.getContext('2d');
+  c.width = r.width * 2; c.height = r.height * 2; x.scale(2, 2); x.lineWidth = 2.2; x.lineCap = 'round'; x.strokeStyle = '#0B1442';
+  etat.signe = false; let trace = false;
+  const pos = (e) => { const b = c.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
+  c.onpointerdown = (e) => { trace = true; c.setPointerCapture(e.pointerId); const p = pos(e); x.beginPath(); x.moveTo(p[0], p[1]); };
+  c.onpointermove = (e) => { if (!trace) return; const p = pos(e); x.lineTo(p[0], p[1]); x.stroke(); etat.signe = true; };
+  c.onpointerup = c.onpointercancel = () => { trace = false; };
+}
+function effacerSignature() { const c = $('rsig'); c.getContext('2d').clearRect(0, 0, c.width, c.height); etat.signe = false; }
 function ajouterControle() {
   const etats = etat.affaire.etatsControle, i = $('rctl').children.length;
   const div = document.createElement('div');
@@ -574,7 +592,10 @@ function enregistrerRapport(ev) {
     domaine: choix('rdom'), localisation: $('rloc').value.trim(), constat: $('rcon').value.trim(), cause: $('rcau').value.trim(),
     travaux: $('rtra').value.trim(), recommandation: $('rrec').value.trim(), controles,
     photos: etat.photosRapport.map((u) => u.split(',')[1]),
+    piecesHorsContrat: $('rhc').checked ? ($('rhct').value.trim() || 'à préciser') : '',
+    signature: etat.signe ? $('rsig').toDataURL('image/png').split(',')[1] : '', signataire: $('rsn').value.trim(),
   };
+  if (etat.signe && !rapport.signataire) { toast('Indique le nom de la personne qui a signé'); return; }
   $('renv').disabled = true; $('renv').textContent = 'Envoi en cours…';
   appel('creerRapport', { numero: numeroCourant(), rapport }).then((n) => { toast('Rapport ' + n + ' enregistré'); revenir(); })
     .catch((e) => { $('renv').disabled = false; $('renv').textContent = 'Enregistrer le rapport'; echec(e); });

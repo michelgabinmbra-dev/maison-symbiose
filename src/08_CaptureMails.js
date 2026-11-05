@@ -38,6 +38,8 @@ function traiterMailsEntrants() {
       Logger.log('Échec de traitement du mail "' + thread.getFirstMessageSubject() + '" : ' + erreur);
     }
   });
+  // Même déclencheur (toutes les 15 min) : relances si une demande ou un rapport traîne.
+  try { verifierDelais(); } catch (e) { Logger.log('Relances : ' + e); }
 }
 
 function creerDemandeDepuisMail(thread) {
