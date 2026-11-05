@@ -17,6 +17,7 @@ etape('sites', () => ajouterSites('AFG', 'Agence Sikensi ; Sikensi\nAgence Plate
 etape('vehicule', () => enregistrerVehiculeReglages({ immatriculation: 'aa-123-ci', marque: 'Toyota' }));
 etape('materiel', () => enregistrerMaterielReglages({ materiel: 'Câble 2.5', entree: 10, prix: 500, seuil: 12 }));
 etape('outil', () => ajouterOutil('Perceuse', 'Bureau'));
+etape('outil 2', () => ajouterOutil('Pince ampèremétrique', 'Bureau'));
 // connexion app
 const s = etape('connexion Michel', () => connexionApp('michelgabinmbra@gmail.com', '1234'));
 const J = s && s.jeton;
@@ -65,6 +66,9 @@ etape('écran préventif après', () => api(sk, 'ecranPreventif', {}).visites.ma
 // matériel / véhicules
 etape('prendre outil', () => api(sk, 'prendreOutil', { outil: 'Perceuse', lieu: 'Sikensi' }));
 etape('sortir matériel', () => api(sk, 'sortirMateriel', { materiel: 'Câble 2.5', numero: num, quantite: 4 }));
+etape('plusieurs outils (rendre 1, prendre 1, 1 erreur)', () => api(sk, 'mouvementsOutils', { prendre: ['Pince ampèremétrique', 'Inconnu'], rendre: ['Perceuse'], lieu: 'Bureau' }));
+etape('plusieurs matériels', () => api(sk, 'sortirMateriels', { numero: num, lignes: [{ materiel: 'Câble 2.5', quantite: 1 }, { materiel: 'Câble 2.5', quantite: 1 }] }));
+etape('plusieurs matériels trop (doit échouer)', () => { try { api(sk, 'sortirMateriels', { numero: num, lignes: [{ materiel: 'Câble 2.5', quantite: 99 }] }); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué : ' + e.message; } });
 etape('retour matériel', () => api(sk, 'declarerRetourMateriel', { materiel: 'Câble 2.5', numero: num, posee: 3, rapportee: 1 }));
 etape('échéances véhicule', () => api(J, 'enregistrerEcheances', { immatriculation: 'AA-123-CI', echeances: { visiteTechnique: '2026-11-12', assurance: '', kmProchaineVidange: 1000 } }));
 etape('prendre véhicule', () => api(sk, 'prendreVehicule', { immatriculation: 'AA-123-CI', kilometrage: 900, photo }));

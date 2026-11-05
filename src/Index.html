@@ -69,6 +69,7 @@ label{font-size:13px;font-weight:600;color:#3E4A6B;display:block;margin-bottom:6
 input,select,textarea{width:100%;min-height:48px;border-radius:12px;border:1px solid #C9D0E3;padding:0 14px;background:#fff;color:var(--texte)}
 textarea{padding:12px 14px;min-height:80px;resize:vertical}
 input[type=range]{padding:0;border:none;min-height:36px}
+input[type=checkbox]{min-height:0;width:20px;height:20px;padding:0;flex:none;accent-color:#4F46E5}
 .champ{display:flex;flex-direction:column}
 .bouton{height:52px;border-radius:16px;border:none;background:linear-gradient(110deg,#22D3EE,#3B82F6 45%,#8B5CF6);color:#fff;font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:15px;font-weight:800;box-shadow:0 10px 24px rgba(59,130,246,.35);width:100%;padding:0 16px}
 .bouton.second{background:#fff;color:var(--texte);border:1px solid #C9D0E3;box-shadow:none;font-family:Inter,sans-serif;font-weight:700}
@@ -188,8 +189,14 @@ function estChef() { return MOI && (MOI.role === 'DG' || MOI.role === 'DGA'); }
 function voitFinances() { return MOI && ['DG', 'DGA', 'COMPTABILITE'].indexOf(MOI.role) !== -1; }
 function initiales(nom) { return String(nom || '?').split(/\s+/).map((m) => m[0]).join('').slice(0, 2).toUpperCase(); }
 
+// Retour du téléphone (geste ou touche) : chaque écran ouvert ajoute une étape à l'historique.
+const HISTO = window.google && google.script && google.script.history;
+if (HISTO) HISTO.setChangeHandler(() => { if (etat.pile.length) revenir(); else if (etat.courant && etat.courant.ecran !== 'accueil') aller('accueil', {}, true); });
 function aller(ecran, params, sansHistorique) {
-  if (!sansHistorique && etat.courant) etat.pile.push(etat.courant);
+  if (!sansHistorique && etat.courant) {
+    etat.pile.push(etat.courant);
+    if (HISTO) try { HISTO.push({ e: ecran, n: etat.pile.length }); } catch (e) {}
+  }
   etat.courant = { ecran, params: params || {} };
   window.scrollTo(0, 0);
   ECRANS[ecran](params || {});
@@ -201,6 +208,12 @@ function revenir() {
 function racine(ecran) { etat.pile = []; etat.courant = null; aller(ecran); }
 
 function rendre(html, ongletActif) {
+  // Tout écran sans barre du bas, ou ouvert depuis un autre, a son bouton Retour.
+  const aRetour = html.indexOf('class="retour"') !== -1;
+  const ecranCourant = etat.courant && etat.courant.ecran;
+  if (!aRetour && MOI && ecranCourant && ecranCourant !== 'accueil' && html.indexOf('class="connexion"') === -1 && (ongletActif === null || etat.pile.length)) {
+    html = html.replace('<div class="orb a"></div>', '<div class="orb a"></div><button class="retour" onclick="revenir()">' + svg('gauche', 18, 'currentColor', 2.2) + 'Retour</button>');
+  }
   $('app').innerHTML = html + (ongletActif === null ? '' : navigation(ongletActif));
 }
 function navigation(actif) {
@@ -869,32 +882,47 @@ ECRANS.materiel = function () {
     etat.materiel = d;
     const outilsDispo = d.outils.filter((o) => o.statut !== 'Sorti'), outilsSortis = d.outils.filter((o) => o.statut === 'Sorti');
     rendre('<div class="hero court"><div class="orb a"></div><h1>Matériel et outils</h1><p style="margin:4px 0 0;color:#C7D2FE;font-size:13px">' + d.nonRendus.length + ' outil(s) non rendu(s)</p></div><div class="feuille">'
-      + '<form class="carte" onsubmit="mouvementOutil(event)"><b>Outil : je prends / je rends</b>'
-      + '<select id="mo" aria-label="Outil" required><option value="">Choisir l\'outil…</option>'
-      + (outilsDispo.length ? '<optgroup label="Disponibles (je prends)">' + outilsDispo.map((o) => '<option value="P|' + esc(o.outil) + '">' + esc(o.outil) + '</option>').join('') + '</optgroup>' : '')
-      + (outilsSortis.length ? '<optgroup label="Sortis (je rends)">' + outilsSortis.map((o) => '<option value="R|' + esc(o.outil) + '">' + esc(o.outil) + '</option>').join('') + '</optgroup>' : '')
-      + '</select><input id="ml" placeholder="Où ? (site, agence, bureau)" aria-label="Lieu"><button class="bouton" type="submit">Valider</button></form>'
+      + '<form class="carte" onsubmit="mouvementOutil(event)"><b>Outils : je prends / je rends</b><small style="color:#5A6585">Coche autant d\'outils que tu veux.</small>'
+      + (outilsDispo.length ? '<b style="font-size:13px;margin-top:6px">Disponibles (je prends)</b>' + outilsDispo.map((o) => cocheOutil(o, 'oprendre')).join('') : '')
+      + (outilsSortis.length ? '<b style="font-size:13px;margin-top:6px">Sortis (je rends)</b>' + outilsSortis.map((o) => cocheOutil(o, 'orendre')).join('') : '')
+      + (d.outils.length ? '' : '<div class="vide">Aucun outil enregistré.</div>')
+      + '<input id="ml" placeholder="Où ? (site, agence, bureau)" aria-label="Lieu"><button class="bouton" type="submit">Valider</button></form>'
       + '<form class="carte" onsubmit="sortieMateriel(event)"><b>Matériel : je sors pour une affaire</b>'
-      + '<select id="mm" aria-label="Matériel" required><option value="">Choisir le matériel…</option>' + d.materiel.map((m) => '<option value="' + esc(m.materiel) + '">' + esc(m.materiel) + ' (stock ' + esc(m.quantite) + ')</option>').join('') + '</select>'
-      + '<div class="deux"><input id="ma" placeholder="N° affaire (AFF-…)" aria-label="Numéro d\'affaire" required><input id="mq" type="number" inputmode="decimal" step="any" placeholder="Quantité" aria-label="Quantité" required></div>'
-      + '<button class="bouton second" type="submit">Sortir du stock</button></form>'
+      + '<input id="ma" placeholder="N° affaire (AFF-…)" aria-label="Numéro d\'affaire" required>'
+      + '<div id="lignesMat"></div><button class="bouton second" type="button" onclick="ajouterLigneMat()">+ Ajouter un matériel</button>'
+      + '<button class="bouton" type="submit">Sortir du stock</button></form>'
       + (d.sortiesEnCours.length ? '<h2>Sorties à clôturer</h2>' + d.sortiesEnCours.map((m, i) => '<form class="carte" onsubmit="retourMateriel(event,' + i + ')"><b>' + esc(m.Materiel) + ' · ' + esc(m.NumeroAffaire) + '</b><small style="color:#5A6585">Sorti ' + esc(m.QuantiteSortie) + ' par ' + esc(m.Agent) + '</small>'
         + '<div class="deux"><input id="rp' + i + '" type="number" inputmode="decimal" step="any" placeholder="Posé" aria-label="Quantité posée" required><input id="rr' + i + '" type="number" inputmode="decimal" step="any" placeholder="Rapporté" aria-label="Quantité rapportée" required></div><button class="bouton second" type="submit">Déclarer</button></form>').join('') : '')
       + '<h2>Outils non rendus · ' + d.nonRendus.length + '</h2>'
       + (d.nonRendus.length ? d.nonRendus.map((o) => '<div class="carte"><div class="ligne"><b>' + esc(o.outil) + '</b><span class="pastille ' + (o.joursDeRetard >= 2 ? 'p-alerte' : 'p-moyenne') + '">' + o.joursDeRetard + ' jour' + (o.joursDeRetard > 1 ? 's' : '') + '</span></div><small style="color:#5A6585">Pris par <b style="color:#0F1733">' + esc(o.prisPar) + '</b> le ' + dateCourte(o.depuis) + ' · ' + esc(o.lieuDeclare) + '</small></div>').join('') : '<div class="vide">Tout est rendu.</div>')
       + (d.ecarts.length ? '<h2>Écarts matériel · ' + d.ecarts.length + '</h2>' + d.ecarts.map((m) => '<div class="carte"><b>' + esc(m.Materiel) + ' : ' + (Number(m.QuantiteSortie) - Number(m.QuantitePosee) - Number(m.QuantiteRapportee)) + ' manquant(s)</b><small style="color:#5A6585">Sorti ' + esc(m.QuantiteSortie) + ' · posé ' + esc(m.QuantitePosee) + ' · rapporté ' + esc(m.QuantiteRapportee) + ' · ' + esc(m.NumeroAffaire) + ' · ' + esc(m.Agent) + '</small></div>').join('') : '')
       + '</div>', voitFinances() ? null : 'materiel');
+    ajouterLigneMat();
   }).catch(echec);
 };
+function cocheOutil(o, cls) { return '<label style="display:flex;gap:10px;align-items:center;min-height:40px"><input type="checkbox" class="' + cls + '" value="' + esc(o.outil) + '" style="width:20px;height:20px"> ' + esc(o.outil) + (o.lieu ? ' <small style="color:#5A6585">· ' + esc(o.lieu) + '</small>' : '') + '</label>'; }
+function ajouterLigneMat() {
+  const d = etat.materiel, div = document.createElement('div');
+  div.className = 'deux ligneMat';
+  div.innerHTML = '<select aria-label="Matériel"><option value="">Choisir le matériel…</option>' + d.materiel.map((m) => '<option value="' + esc(m.materiel) + '">' + esc(m.materiel) + ' (stock ' + esc(m.quantite) + ')</option>').join('') + '</select>'
+    + '<input type="number" inputmode="decimal" step="any" placeholder="Quantité" aria-label="Quantité">';
+  $('lignesMat').appendChild(div);
+}
 function mouvementOutil(ev) {
   ev.preventDefault();
-  const v = $('mo').value; if (!v) return;
-  const prise = v[0] === 'P', outil = v.slice(2);
-  appel(prise ? 'prendreOutil' : 'rendreOutil', { outil, lieu: $('ml').value }).then(() => { toast(prise ? 'Outil pris : ' + outil : 'Outil rendu : ' + outil); ECRANS.materiel(); }).catch(echec);
+  const coches = (cls) => Array.from(document.querySelectorAll('.' + cls + ':checked')).map((x) => x.value);
+  const prendre = coches('oprendre'), rendre = coches('orendre');
+  if (!prendre.length && !rendre.length) { toast('Coche au moins un outil'); return; }
+  appel('mouvementsOutils', { prendre, rendre, lieu: $('ml').value }).then((b) => {
+    toast([b.pris.length ? b.pris.length + ' pris' : '', b.rendus.length ? b.rendus.length + ' rendu(s)' : ''].filter(Boolean).join(', ') + (b.erreurs.length ? ' · ' + b.erreurs.join(' ; ') : ''));
+    ECRANS.materiel();
+  }).catch(echec);
 }
 function sortieMateriel(ev) {
   ev.preventDefault();
-  appel('sortirMateriel', { materiel: $('mm').value, numero: $('ma').value.trim(), quantite: $('mq').value }).then(() => { toast('Sortie enregistrée'); ECRANS.materiel(); }).catch(echec);
+  const lignes = Array.from(document.querySelectorAll('.ligneMat')).map((l) => ({ materiel: l.querySelector('select').value, quantite: l.querySelector('input').value })).filter((l) => l.materiel);
+  if (!lignes.length) { toast('Choisis au moins un matériel'); return; }
+  appel('sortirMateriels', { numero: $('ma').value.trim(), lignes }).then((n) => { toast(n + ' sortie(s) enregistrée(s)'); ECRANS.materiel(); }).catch(echec);
 }
 function retourMateriel(ev, i) {
   ev.preventDefault();

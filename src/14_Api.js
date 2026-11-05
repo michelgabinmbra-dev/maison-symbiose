@@ -72,6 +72,8 @@ const ACTIONS_API = {
   prendreOutil: (a) => prendreOutil(a.outil, a.lieu),
   rendreOutil: (a) => rendreOutil(a.outil, a.lieu),
   sortirMateriel: (a) => sortirMateriel(a.materiel, a.numero, a.quantite),
+  mouvementsOutils: (a) => mouvementsOutils(a.prendre, a.rendre, a.lieu),
+  sortirMateriels: (a) => sortirMateriels(a.numero, a.lignes),
   declarerRetourMateriel: (a) => declarerRetourMateriel(a.materiel, a.numero, a.posee, a.rapportee),
   // Compte
   changerMonCode: (a) => definirCodeAcces(getEmailUtilisateurCourant(), a.code),

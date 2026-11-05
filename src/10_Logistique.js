@@ -60,6 +60,16 @@ function rendreOutil(outil, lieuDeclare) {
   ]);
 }
 
+/** Plusieurs outils d'un coup : prendre[] et rendre[] (noms d'outils), même lieu. Retourne { pris, rendus, erreurs }. */
+function mouvementsOutils(prendre, rendre, lieuDeclare) {
+  exigerRole(Object.values(ROLES));
+  const bilan = { pris: [], rendus: [], erreurs: [] };
+  (prendre || []).forEach((o) => { try { prendreOutil(o, lieuDeclare); bilan.pris.push(o); } catch (e) { bilan.erreurs.push(o + ' : ' + e.message); } });
+  (rendre || []).forEach((o) => { try { rendreOutil(o, lieuDeclare); bilan.rendus.push(o); } catch (e) { bilan.erreurs.push(o + ' : ' + e.message); } });
+  if (!bilan.pris.length && !bilan.rendus.length && !bilan.erreurs.length) throw new Error('Coche au moins un outil.');
+  return bilan;
+}
+
 /** Outils sortis depuis plus de DELAI_ALERTE_RETOUR_OUTIL_JOURS, avec qui les a pris et depuis quand. */
 function listerOutilsNonRendus() {
   const limite = new Date(Date.now() - DELAI_ALERTE_RETOUR_OUTIL_JOURS * 24 * 3600 * 1000);
@@ -155,6 +165,23 @@ function sortirMateriel(materiel, numeroAffaire, quantite) {
   getFeuilleDonnees(NOMS_FEUILLES.MOUVEMENTS_MATERIEL).appendRow([
     materiel, numeroAffaire, utilisateur.nom, Number(quantite), '', '', new Date(),
   ]);
+}
+
+/** Plusieurs matériels sortis pour la même affaire : lignes = [{materiel, quantite}]. Tout est vérifié avant d'écrire. */
+function sortirMateriels(numeroAffaire, lignes) {
+  exigerRole(Object.values(ROLES));
+  trouverAffaire(numeroAffaire);
+  lignes = (lignes || []).filter((l) => l && l.materiel);
+  if (!lignes.length) throw new Error('Ajoute au moins un matériel.');
+  const demande = {};
+  lignes.forEach((l) => { demande[l.materiel] = (demande[l.materiel] || 0) + Number(l.quantite); });
+  Object.keys(demande).forEach((m) => {
+    const r = trouverMateriel(m);
+    const stock = Number(r.ligne[r.entetes.indexOf('Quantite')]) || 0;
+    if (!(demande[m] > 0) || demande[m] > stock) throw new Error(m + ' : quantité invalide ' + demande[m] + ' (en stock : ' + stock + ').');
+  });
+  lignes.forEach((l) => sortirMateriel(l.materiel, numeroAffaire, l.quantite));
+  return lignes.length;
 }
 
 /**
