@@ -20,6 +20,8 @@ const NOMS_FEUILLES = {
   DEVIS: 'Devis',
   LIGNES_DEVIS: 'Lignes_Devis',
   RAPPORTS: 'Rapports',
+  GROUPES: 'Groupes',
+  CHECKLIST_PREVENTIF: 'Checklist_Preventif',
   FACTURES: 'Factures',
   PAIEMENTS: 'Paiements',
   DEPENSES: 'Depenses',

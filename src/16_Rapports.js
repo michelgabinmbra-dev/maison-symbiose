@@ -27,7 +27,7 @@ function creerRapport(numeroAffaire, details) {
     Utilities.newBlob(Utilities.base64Decode(base64), 'image/jpeg', numero + '_' + (i + 1) + '.jpg')).getId());
   const controles = (details.controles || [])
     .filter((c) => c && c.element)
-    .map((c) => ({ element: String(c.element), etat: ETATS_CONTROLE.indexOf(c.etat) !== -1 ? c.etat : 'OK', observation: String(c.observation || '') }));
+    .map((c) => ({ section: String(c.section || ''), element: String(c.element), etat: ETATS_CONTROLE.indexOf(c.etat) !== -1 ? c.etat : 'OK', observation: String(c.observation || '') }));
 
   feuille.appendRow([
     numero, numeroAffaire, utilisateur.nom, new Date(), details.domaine || '', details.localisation || '',
@@ -66,6 +66,8 @@ function htmlRapportClient(numeroRapport) {
   const e = echapperHtml;
   const couleurs = { 'OK': '#047857', 'À surveiller': '#B45309', 'HS': '#B91C1C' };
   const controles = JSON.parse(r.Controles || '[]');
+  const sectionsControles = controles.map((c) => c.section || '').filter((x, i, t) => t.indexOf(x) === i);
+  const mesures = JSON.parse(r.Mesures || '{}');
   const photos = JSON.parse(r.Photos || '[]').map((id) => {
     const blob = DriveApp.getFileById(id).getBlob();
     return 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
@@ -82,10 +84,12 @@ function htmlRapportClient(numeroRapport) {
     + '<p style="margin:8px 0 0"><b style="font-size:10px;color:#0E5C8C;letter-spacing:.06em">OBJET</b><br>' + e(affaire.Titre || '') + '</p>'
     + rubrique('CONSTAT', r.Constat)
     + rubrique('CAUSE PROBABLE', r.Cause)
+    + tableauReleves(mesures)
     + (controles.length
-      ? '<table style="width:100%;border-collapse:collapse;margin-top:10px"><tr style="background:#A9CDEB;font-weight:bold"><td style="' + cellule + '">Élément contrôlé</td><td style="' + cellule + ';text-align:center;width:90px">État</td><td style="' + cellule + '">Observations</td></tr>'
-        + controles.map((c) => '<tr><td style="' + cellule + '">' + e(c.element) + '</td><td style="' + cellule + ';text-align:center;font-weight:bold;color:' + (couleurs[c.etat] || '#1F2937') + '">' + e(c.etat) + '</td><td style="' + cellule + '">' + e(c.observation) + '</td></tr>').join('')
-        + '</table>'
+      ? sectionsControles.map((section) => (section ? '<p style="margin:12px 0 0"><b style="font-size:11px;color:#0E5C8C">' + e(section.toUpperCase()) + '</b></p>' : '')
+        + '<table style="width:100%;border-collapse:collapse;margin-top:' + (section ? '3' : '10') + 'px"><tr style="background:#A9CDEB;font-weight:bold"><td style="' + cellule + '">Élément contrôlé</td><td style="' + cellule + ';text-align:center;width:90px">État</td><td style="' + cellule + '">Observations</td></tr>'
+        + controles.filter((c) => (c.section || '') === section).map((c) => '<tr><td style="' + cellule + '">' + e(c.element) + '</td><td style="' + cellule + ';text-align:center;font-weight:bold;color:' + (couleurs[c.etat] || '#1F2937') + '">' + e(c.etat) + '</td><td style="' + cellule + '">' + e(c.observation) + '</td></tr>').join('')
+        + '</table>').join('')
       : '')
     + rubrique('TRAVAUX RÉALISÉS', r.TravauxRealises)
     + (photos.length
@@ -94,7 +98,20 @@ function htmlRapportClient(numeroRapport) {
     + rubrique('RECOMMANDATION', r.Recommandation)
     + '<table style="width:100%;margin-top:14px"><tr><td></td><td style="width:200px;text-align:center"><img src="' + IMAGES_ENTETE.signature + '" style="width:150px"></td></tr></table>';
 
-  return cadreDocument('RAPPORT D\'INTERVENTION', numeroRapport, contenu);
+  return cadreDocument(r.Domaine === 'Maintenance préventive' ? 'RAPPORT DE MAINTENANCE PRÉVENTIVE' : 'RAPPORT D\'INTERVENTION', numeroRapport, contenu);
+}
+
+/** Relevés du groupe électrogène et horaires de la visite préventive (vide si aucun). */
+function tableauReleves(mesures) {
+  const libelles = [['debut', 'Début des travaux'], ['fin', 'Fin des travaux']].concat(typeof RELEVES_GROUPE !== 'undefined' ? RELEVES_GROUPE : []);
+  const presents = libelles.filter((l) => mesures[l[0]]);
+  if (presents.length === 0) return '';
+  const cellule = 'border:1px solid #9CA3AF;padding:4px 6px';
+  const lignes = [];
+  for (let i = 0; i < presents.length; i += 2) {
+    lignes.push('<tr>' + presents.slice(i, i + 2).map((l) => '<td style="' + cellule + ';color:#4B5563;width:25%">' + echapperHtml(l[1]) + '</td><td style="' + cellule + ';width:25%"><b>' + echapperHtml(mesures[l[0]]) + '</b></td>').join('') + '</tr>');
+  }
+  return '<table style="width:100%;border-collapse:collapse;margin-top:10px">' + lignes.join('') + '</table>';
 }
 
 function pdfRapportBlob(numeroRapport) {

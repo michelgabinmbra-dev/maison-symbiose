@@ -41,6 +41,11 @@ const ACTIONS_API = {
   creerRapport: (a) => creerRapport(a.numero, a.rapport),
   pdfRapport: (a) => pdfRapport(a.rapport),
   envoyerRapport: (a) => envoyerRapport(a.rapport),
+  // Maintenance préventive par groupes
+  ecranPreventif: () => ecranPreventif(),
+  ficheVisite: (a) => ficheVisite(a.numero),
+  planifierPreventif: (a) => planifierPreventif(a.details),
+  enregistrerVisite: (a) => enregistrerVisitePreventive(a.numero, a.fiche),
   // Facture et paiements
   emettreFacture: (a) => emettreFacture(a.numero, { bonCommande: a.bonCommande, delaiJours: a.delaiJours }),
   deposerFacture: (a) => deposerFacture(a.facture, a.date),

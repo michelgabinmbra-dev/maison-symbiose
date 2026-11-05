@@ -260,6 +260,7 @@ ECRANS.accueil = function () {
       + '<div class="feuille">'
       + (voitFinances() ? '<button class="bandeau" onclick="aller(\'point\')"><span><strong>Point de situation en 5 s</strong><small>AFG, UCP-FM… prêt en PDF ou par mail</small></span><span class="rond">' + svg('droite', 18, '#fff', 2.4) + '</span></button>' : '')
       + (voitFinances() ? '<button class="item" onclick="aller(\'materiel\')"><span class="ico vert">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Matériel et outils</b><small>Je prends, je rends, outils non rendus</small></span></button>' : '')
+      + '<button class="item" onclick="aller(\'preventif\')"><span class="ico bleu">' + svg('bouclier', 22, '#fff') + '</span><span class="txt"><b>Maintenance préventive</b><small>Visites de mon groupe, fiche et rapport</small></span>' + svg('droite', 20, '#5A6585') + '</button>'
       + '<div class="ligne"><h2>Urgences, tous clients</h2><a href="#" onclick="racine(\'affaires\');return false">Tout voir</a></div>'
       + (d.urgences.length ? d.urgences.map(carteAffaire).join('') : '<div class="vide">Aucune affaire en cours.</div>')
       + '</div>', 'accueil');
@@ -422,6 +423,98 @@ function enregistrerRapport(ev) {
   $('renv').disabled = true; $('renv').textContent = 'Envoi en cours…';
   appel('creerRapport', { numero: numeroCourant(), rapport }).then((n) => { toast('Rapport ' + n + ' enregistré'); revenir(); })
     .catch((e) => { $('renv').disabled = false; $('renv').textContent = 'Enregistrer le rapport'; echec(e); });
+}
+
+// ---------- Maintenance préventive ----------
+ECRANS.preventif = function () {
+  appel('ecranPreventif').then((d) => {
+    etat.preventif = d;
+    const aFaire = d.visites.filter((v) => !v.faite), faites = d.visites.filter((v) => v.faite);
+    const ligne = (v) => '<button class="item" onclick="' + (v.faite ? 'aller(\'affaire\',{numero:\'' + esc(v.numero) + '\'})' : 'aller(\'visite\',{numero:\'' + esc(v.numero) + '\'})') + '"><span class="ico ' + (v.faite ? 'vert' : 'bleu') + '">' + svg(v.faite ? 'liste' : 'bouclier', 22, '#fff') + '</span>'
+      + '<span class="txt"><b>' + esc(v.client) + (v.site ? ' · ' + esc(v.site) : '') + '</b><small>' + esc(v.groupe) + ' · ' + esc(v.titre) + (v.faite ? ' · faite le ' + dateCourte(v.date) : (v.prevue ? ' · prévue le ' + dateCourte(v.prevue) : '')) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>';
+    rendre(entete('Maintenance préventive', d.groupes.length ? d.groupes.map((g) => esc(g.nom) + (g.chef ? ' (' + esc(g.chef) + ')' : '')).join(' · ') : 'Tu n\'es dans aucun groupe pour l\'instant')
+      + '<div class="section">'
+      + (d.peutPlanifier ? '<button class="bouton" onclick="aller(\'planifier\')">Planifier un passage</button>' : '')
+      + '<h2>À faire (' + aFaire.length + ')</h2>' + (aFaire.length ? aFaire.map(ligne).join('') : '<div class="vide">Aucune visite à faire.</div>')
+      + (faites.length ? '<h2>Faites (' + faites.length + ')</h2>' + faites.slice(0, 30).map(ligne).join('') : '')
+      + '</div>', 'accueil');
+  }).catch(echec);
+};
+ECRANS.planifier = function () {
+  appel('listeClients').then((clients) => {
+    etat.clients = clients;
+    const d = etat.preventif;
+    rendre(entete('Planifier le préventif', 'Une visite par site, assignée à un groupe')
+      + '<form class="section" onsubmit="planifierUI(event)"><div class="carte" style="gap:14px">'
+      + '<div class="champ"><label for="pc">Client</label><select id="pc" onchange="sitesPlanif()">' + clients.map((c) => '<option>' + esc(c.nom) + '</option>').join('') + '</select></div>'
+      + '<div class="champ"><label>Sites</label><div id="psites" style="display:flex;flex-direction:column;gap:6px"></div></div>'
+      + '<div class="champ"><label>Groupe</label><div class="puces" id="pgrp">' + d.groupes.map((g, i) => '<button type="button" class="puce ' + (i ? '' : 'on') + '" onclick="choisir(\'pgrp\',this)">' + esc(g.nom) + '</button>').join('') + '</div>'
+      + (d.groupes.length ? '' : '<small style="color:#B91C1C">Ajoute d\'abord les groupes dans la feuille Groupes.</small>') + '</div>'
+      + '<div class="deux"><div class="champ"><label for="ptr">Trimestre</label><input id="ptr" value="' + esc(d.trimestre) + '"></div>'
+      + '<div class="champ"><label for="pdp">Prévu le</label><input id="pdp" type="date"></div></div>'
+      + '<button class="bouton" type="submit">Planifier</button></div></form>', 'accueil');
+    sitesPlanif();
+  }).catch(echec);
+};
+function sitesPlanif() {
+  const c = etat.clients.filter((x) => x.nom === $('pc').value)[0] || { sites: [] };
+  $('psites').innerHTML = c.sites.length
+    ? '<label style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" onchange="document.querySelectorAll(\'.csite\').forEach((x)=>{x.checked=this.checked})"> Tous les sites</label>'
+      + c.sites.map((s) => '<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" class="csite" value="' + esc(s) + '"> ' + esc(s) + '</label>').join('')
+    : '<small style="color:#5A6585">Aucun site enregistré pour ce client (feuille Sites).</small>';
+}
+function planifierUI(ev) {
+  ev.preventDefault();
+  const sites = Array.from(document.querySelectorAll('.csite:checked')).map((x) => x.value);
+  if (!sites.length) { toast('Coche au moins un site'); return; }
+  appel('planifierPreventif', { details: { client: $('pc').value, sites, groupe: choix('pgrp'), trimestre: $('ptr').value.trim(), datePrevue: $('pdp').value } })
+    .then((n) => { toast(n.length + ' visite(s) planifiée(s)'); revenir(); }).catch(echec);
+}
+ECRANS.visite = function (p) {
+  appel('ficheVisite', { numero: p.numero }).then((d) => {
+    etat.visite = d; etat.photosRapport = []; etat.nbCtl = 0;
+    const a = d.affaire;
+    let html = entete('Fiche de visite', esc(a.client) + (a.site ? ' · ' + esc(a.site) : '') + ' · ' + esc(a.groupe))
+      + '<form class="section" onsubmit="enregistrerVisiteUI(event)">'
+      + '<div class="carte"><div class="deux"><div class="champ"><label for="vdb">Début</label><input id="vdb" type="time"></div><div class="champ"><label for="vfn">Fin</label><input id="vfn" type="time"></div></div></div>';
+    d.sections.forEach((sec, k) => {
+      html += '<div class="carte" style="gap:4px"><b style="font-size:13px;color:#5A6585">' + esc(sec.toUpperCase()) + '</b><div id="sec' + k + '">'
+        + (d.checklist[sec] || []).map((el) => ligneControle(sec, el)).join('') + '</div>'
+        + '<button type="button" class="bouton second" onclick="autrePoint(' + k + ')">+ Autre point</button>'
+        + (sec === 'Groupe électrogène' ? '<div class="deux" style="margin-top:8px">' + d.releves.map((r) => '<div class="champ"><label for="rv_' + r[0] + '">' + esc(r[1]) + '</label><input id="rv_' + r[0] + '"' + (r[0] === 'heures' ? ' inputmode="numeric"' : '') + '></div>').join('') + '</div>' : '')
+        + '</div>';
+    });
+    html += '<div class="carte" style="gap:14px">'
+      + '<div class="champ"><label for="vrap">Rapport de la visite</label><textarea id="vrap" placeholder="Facultatif : résumé fait automatiquement sinon"></textarea></div>'
+      + '<div class="champ"><label for="vrec">Recommandations</label><textarea id="vrec"></textarea></div>'
+      + '<div class="champ"><label>Photos (2 au plus)</label><div id="rphotos" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>'
+      + '<div class="photo" style="height:90px">' + svg('photo', 28, 'currentColor', 1.8) + '<b>Ajouter des photos</b><input type="file" accept="image/*" multiple aria-label="Ajouter des photos" onchange="ajouterPhotosRapport(this)"></div></div>'
+      + '<button class="bouton" type="submit" id="renv">Enregistrer la visite</button></div></form>';
+    rendre(html, 'accueil');
+  }).catch(echec);
+};
+function ligneControle(section, element) {
+  const i = etat.nbCtl++;
+  return '<div class="ctlp" data-section="' + esc(section) + '" style="padding:8px 0;border-bottom:1px solid #E6E9F2;display:flex;flex-direction:column;gap:6px">'
+    + (element === null ? '<input class="cel" placeholder="Point contrôlé" aria-label="Point contrôlé">' : '<b class="cel" style="font-size:14px">' + esc(element) + '</b>')
+    + '<div class="puces" id="ct' + i + '" style="margin:0">' + etat.visite.etats.map((t, k) => '<button type="button" class="puce ' + (k ? '' : 'on') + '" style="min-height:36px;padding:6px 12px" onclick="choisir(\'ct' + i + '\',this);this.closest(\'.ctlp\').querySelector(\'.cobs\').style.display=' + (k ? '\'block\'' : '\'none\'') + '">' + esc(t) + '</button>').join('') + '</div>'
+    + '<input class="cobs" placeholder="Observation" aria-label="Observation" style="display:none"></div>';
+}
+function autrePoint(k) {
+  const div = document.createElement('div'); div.innerHTML = ligneControle(etat.visite.sections[k], null);
+  $('sec' + k).appendChild(div.firstChild);
+}
+function enregistrerVisiteUI(ev) {
+  ev.preventDefault();
+  const controles = Array.from(document.querySelectorAll('.ctlp')).map((c) => {
+    const el = c.querySelector('.cel');
+    return { section: c.dataset.section, element: (el.value !== undefined ? el.value : el.textContent).trim(), etat: (c.querySelector('.puce.on') || {}).textContent || 'OK', observation: c.querySelector('.cobs').value.trim() };
+  }).filter((c) => c.element);
+  const releves = {}; etat.visite.releves.forEach((r) => { const v = $('rv_' + r[0]).value.trim(); if (v) releves[r[0]] = v; });
+  const fiche = { controles, releves, debut: $('vdb').value, fin: $('vfn').value, rapport: $('vrap').value.trim(), recommandation: $('vrec').value.trim(), photos: etat.photosRapport.map((u) => u.split(',')[1]) };
+  $('renv').disabled = true; $('renv').textContent = 'Envoi en cours…';
+  appel('enregistrerVisite', { numero: etat.visite.affaire.numero, fiche }).then((n) => { toast('Visite enregistrée, rapport ' + n); revenir(); })
+    .catch((e) => { $('renv').disabled = false; $('renv').textContent = 'Enregistrer la visite'; echec(e); });
 }
 
 // ---------- Facture et paiements ----------
