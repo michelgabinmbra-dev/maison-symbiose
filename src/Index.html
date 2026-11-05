@@ -261,6 +261,7 @@ ECRANS.accueil = function () {
       + (voitFinances() ? '<button class="bandeau" onclick="aller(\'point\')"><span><strong>Point de situation en 5 s</strong><small>AFG, UCP-FM… prêt en PDF ou par mail</small></span><span class="rond">' + svg('droite', 18, '#fff', 2.4) + '</span></button>' : '')
       + (voitFinances() ? '<button class="item" onclick="aller(\'materiel\')"><span class="ico vert">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Matériel et outils</b><small>Je prends, je rends, outils non rendus</small></span></button>' : '')
       + '<button class="item" onclick="aller(\'preventif\')"><span class="ico bleu">' + svg('bouclier', 22, '#fff') + '</span><span class="txt"><b>Maintenance préventive</b><small>Visites de mon groupe, fiche et rapport</small></span>' + svg('droite', 20, '#5A6585') + '</button>'
+      + (MOI && ['DG', 'DGA', 'STOCK'].indexOf(MOI.role) !== -1 ? '<button class="item" onclick="aller(\'reglages\')"><span class="ico violet">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Réglages</b><small>' + (MOI.role === 'STOCK' ? 'Matériel, seuils, outils' : 'Équipe et codes, clients, sites, véhicules, stock') + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>' : '')
       + '<div class="ligne"><h2>Urgences, tous clients</h2><a href="#" onclick="racine(\'affaires\');return false">Tout voir</a></div>'
       + (d.urgences.length ? d.urgences.map(carteAffaire).join('') : '<div class="vide">Aucune affaire en cours.</div>')
       + '</div>', 'accueil');
@@ -548,6 +549,90 @@ function enregistrerVisiteUI(ev) {
   appel('enregistrerVisite', { numero: etat.visite.affaire.numero, fiche }).then((n) => { toast('Visite enregistrée, rapport ' + n); revenir(); })
     .catch((e) => { $('renv').disabled = false; $('renv').textContent = 'Enregistrer la visite'; echec(e); });
 }
+
+// ---------- Réglages ----------
+const ONGLETS_REGLAGES = [['equipe', 'Équipe'], ['clients', 'Clients'], ['sites', 'Sites'], ['vehicules', 'Véhicules'], ['stock', 'Stock']];
+ECRANS.reglages = function (p) {
+  appel('ecranReglages').then((d) => {
+    etat.reglages = d;
+    const onglets = d.tout ? ONGLETS_REGLAGES : [['stock', 'Stock']];
+    const actif = onglets.some((o) => o[0] === p.onglet) ? p.onglet : onglets[0][0];
+    rendre(entete('Réglages', 'Sans ouvrir le classeur')
+      + '<div class="section"><div class="puces">' + onglets.map((o) => '<button class="puce ' + (o[0] === actif ? 'on' : '') + '" onclick="aller(\'reglages\',{onglet:\'' + o[0] + '\'},true)">' + o[1] + '</button>').join('') + '</div>'
+      + REGLAGES[actif](d) + '</div>', null);
+  }).catch(echec);
+};
+function ongletReglages() { return (etat.courant && etat.courant.params.onglet) || ''; }
+function rechargerReglages(msg) { toast(msg); ECRANS.reglages({ onglet: ongletReglages() }); }
+function champ(id, label, valeur, extra) { return '<div class="champ"><label for="' + id + '">' + label + '</label><input id="' + id + '" value="' + esc(valeur || '') + '"' + (extra || '') + '></div>'; }
+const REGLAGES = {
+  equipe(d) {
+    const fiche = (u, i) => '<form class="carte" style="gap:10px" onsubmit="enregistrerMembreUI(event,' + i + ')">'
+      + (u ? '' : '<b>Ajouter une personne</b>')
+      + champ('me' + i, 'Email', u && u.email, u ? ' readonly' : ' type="email" required')
+      + '<div class="deux">' + champ('mn' + i, 'Nom', u && u.nom, ' required') + champ('mf' + i, 'Fonction', u && u.fonction) + '</div>'
+      + '<div class="deux"><div class="champ"><label for="mr' + i + '">Rôle</label><select id="mr' + i + '">' + d.roles.map((r) => '<option' + ((u ? u.role === r : r === 'TECHNICIEN') ? ' selected' : '') + '>' + r + '</option>').join('') + '</select></div>'
+      + champ('mt' + i, 'Téléphone', u && u.telephone, ' inputmode="tel"') + '</div>'
+      + '<div class="champ"><label>Droits en plus</label><div class="puces" id="md' + i + '">' + d.droits.map((x) => '<button type="button" class="puce ' + (u && u.droits.indexOf(x) !== -1 ? 'on' : '') + '" onclick="this.classList.toggle(\'on\')">' + esc(x) + '</button>').join('') + '</div></div>'
+      + '<div class="deux">' + champ('mc' + i, u && u.aUnCode ? 'Nouveau code (a déjà un code)' : 'Code d\'accès', '', ' inputmode="numeric" pattern="[0-9]{4,6}" placeholder="4 à 6 chiffres"')
+      + '<div class="champ"><label for="ma' + i + '">Actif</label><select id="ma' + i + '"><option value="1">Oui</option><option value="0"' + (u && !u.actif ? ' selected' : '') + '>Non</option></select></div></div>'
+      + '<button class="bouton ' + (u ? 'second' : '') + '" type="submit">' + (u ? 'Enregistrer' : 'Ajouter') + '</button></form>';
+    return d.equipe.map((u, i) => '<details class="carte"><summary style="display:flex;justify-content:space-between;align-items:center;min-height:44px;cursor:pointer"><span><b>' + esc(u.nom || u.email) + '</b><br><small style="color:#5A6585">' + esc(u.role) + (u.fonction ? ' · ' + esc(u.fonction) : '') + (u.droits ? ' · ' + esc(u.droits) : '') + '</small></span>'
+      + '<span class="pastille ' + (!u.actif ? 'p-vide' : u.aUnCode ? 'p-ok' : 'p-alerte') + '">' + (!u.actif ? 'Inactif' : u.aUnCode ? 'Code OK' : 'Sans code') + '</span></summary>' + fiche(u, i) + '</details>').join('')
+      + fiche(null, d.equipe.length);
+  },
+  clients(d) {
+    const fiche = (c, i) => '<form class="carte" style="gap:10px" onsubmit="enregistrerClientUI(event,' + i + ')">' + (c ? '<b>' + esc(c.nom) + '</b>' : '<b>Ajouter un client</b>' + champ('cn' + i, 'Nom du client', '', ' required'))
+      + '<div class="deux">' + champ('cc' + i, 'Code document (ex. AGB)', c && c.code) + champ('ct' + i, 'Type de contrat', c && c.contrat) + '</div>'
+      + '<div class="champ"><label for="ce' + i + '">Contacts mail (séparés par des virgules)</label><textarea id="ce' + i + '">' + esc(c && c.contacts) + '</textarea></div>'
+      + '<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="cp' + i + '"' + (c && c.pointHebdo ? ' checked' : '') + '> Envoyer le point de situation chaque vendredi</label>'
+      + '<button class="bouton ' + (c ? 'second' : '') + '" type="submit">' + (c ? 'Enregistrer' : 'Ajouter') + '</button></form>';
+    return d.clients.map(fiche).join('') + fiche(null, d.clients.length);
+  },
+  sites(d) {
+    return d.clients.map((c, ci) => {
+      const siens = d.sites.filter((s) => s.client === c.nom);
+      return '<div class="carte" style="gap:8px"><div class="ligne"><b>' + esc(c.nom) + '</b><span style="color:#5A6585;font-size:13px">' + siens.length + ' site(s)</span></div>'
+        + siens.map((s) => '<div class="kv" style="align-items:center"><span>' + esc(s.nom) + (s.ville ? ' · ' + esc(s.ville) : '') + '</span><button class="puce" style="min-height:32px;padding:4px 10px" aria-label="Retirer ' + esc(s.nom) + '" onclick="supprimerSiteUI(' + ci + ',' + d.sites.indexOf(s) + ')">×</button></div>').join('')
+        + '<textarea id="st' + ci + '" placeholder="Un site par ligne, ex. :\nAgence Sikensi ; Sikensi\nAgence Adjamé ; Abidjan"></textarea>'
+        + '<button class="bouton second" onclick="ajouterSitesUI(' + ci + ')">Ajouter ces sites</button></div>';
+    }).join('') || '<div class="vide">Ajoute d\'abord un client.</div>';
+  },
+  vehicules(d) {
+    return d.vehicules.map((v) => '<div class="item"><span class="ico vert">' + svg('auto', 22, '#fff') + '</span><span class="txt"><b>' + esc(v.immatriculation) + '</b><small>' + esc([v.marque, v.modele].filter(Boolean).join(' ')) + (v.visiteTechnique ? ' · VT ' + esc(v.visiteTechnique) : '') + '</small></span></div>').join('')
+      + '<form class="carte" style="gap:10px" onsubmit="enregistrerVehiculeUI(event)"><b>Ajouter un véhicule</b>' + champ('vi', 'Immatriculation', '', ' required')
+      + '<div class="deux">' + champ('vm', 'Marque', '') + champ('vo', 'Modèle', '') + '</div><button class="bouton" type="submit">Ajouter</button>'
+      + '<small style="color:#5A6585">Les échéances (visite, assurance, vidange) se saisissent sur la fiche du véhicule.</small></form>';
+  },
+  stock(d) {
+    const s = d.stock;
+    return '<h2>Matériel</h2>' + (s.materiel.length ? s.materiel.map((m) => '<div class="kv"><span>' + esc(m.materiel) + (m.seuil ? ' <small style="color:#5A6585">(seuil ' + m.seuil + ')</small>' : '') + '</span><b style="color:' + (m.seuil && m.quantite <= m.seuil ? '#B91C1C' : 'inherit') + '">' + m.quantite + '</b></div>').join('') : '<div class="vide">Aucun matériel.</div>')
+      + '<form class="carte" style="gap:10px" onsubmit="enregistrerMaterielUI(event)"><b>Entrée de matériel / seuil d\'alerte</b>'
+      + '<div class="champ"><label for="sm">Matériel</label><input id="sm" list="lsm" required><datalist id="lsm">' + s.materiel.map((m) => '<option value="' + esc(m.materiel) + '">').join('') + '</datalist></div>'
+      + '<div class="deux">' + champ('se', 'Quantité reçue', '', ' type="number" inputmode="numeric"') + champ('sp', 'Prix unitaire (F)', '', ' type="number" inputmode="numeric"') + '</div>'
+      + champ('ss', 'Seuil d\'alerte (Jean prévenu en dessous)', '', ' type="number" inputmode="numeric"')
+      + '<button class="bouton" type="submit">Enregistrer</button></form>'
+      + '<h2>Outils</h2>' + s.outils.map((o) => '<div class="kv"><span>' + esc(o.outil) + (o.lieu ? ' · ' + esc(o.lieu) : '') + '</span><span>' + esc(o.statut) + '</span></div>').join('')
+      + '<form class="carte" style="gap:10px" onsubmit="ajouterOutilUI(event)"><b>Ajouter un outil</b><div class="deux">' + champ('on', 'Outil', '', ' required') + champ('ol', 'Rangé à', '') + '</div><button class="bouton" type="submit">Ajouter</button></form>';
+  },
+};
+function enregistrerMembreUI(ev, i) {
+  ev.preventDefault();
+  const membre = { email: $('me' + i).value.trim(), nom: $('mn' + i).value.trim(), fonction: $('mf' + i).value.trim(), role: $('mr' + i).value, telephone: $('mt' + i).value.trim(),
+    droits: Array.from($('md' + i).querySelectorAll('.puce.on')).map((b) => b.textContent).join(', '), code: $('mc' + i).value.trim(), actif: $('ma' + i).value === '1' };
+  appel('enregistrerMembre', { membre }).then(() => rechargerReglages(membre.nom + ' enregistré(e)')).catch(echec);
+}
+function enregistrerClientUI(ev, i) {
+  ev.preventDefault();
+  const existant = etat.reglages.clients[i];
+  const client = { nom: existant ? existant.nom : $('cn' + i).value.trim(), code: $('cc' + i).value.trim(), contrat: $('ct' + i).value.trim(), contacts: $('ce' + i).value.trim(), pointHebdo: $('cp' + i).checked };
+  appel('enregistrerClient', { client }).then(() => rechargerReglages(client.nom + ' enregistré')).catch(echec);
+}
+function ajouterSitesUI(ci) { appel('ajouterSites', { client: etat.reglages.clients[ci].nom, texte: $('st' + ci).value }).then((n) => rechargerReglages(n + ' site(s) ajouté(s)')).catch(echec); }
+function supprimerSiteUI(ci, si) { const s = etat.reglages.sites[si]; if (!confirm('Retirer ' + s.nom + ' ?')) return; appel('supprimerSite', { client: s.client, nom: s.nom }).then(() => rechargerReglages('Site retiré')).catch(echec); }
+function enregistrerVehiculeUI(ev) { ev.preventDefault(); appel('enregistrerVehicule', { vehicule: { immatriculation: $('vi').value, marque: $('vm').value, modele: $('vo').value } }).then(() => rechargerReglages('Véhicule enregistré')).catch(echec); }
+function enregistrerMaterielUI(ev) { ev.preventDefault(); appel('enregistrerMateriel', { materiel: { materiel: $('sm').value.trim(), entree: $('se').value, prix: $('sp').value, seuil: $('ss').value } }).then(() => rechargerReglages('Stock mis à jour')).catch(echec); }
+function ajouterOutilUI(ev) { ev.preventDefault(); appel('ajouterOutil', { outil: $('on').value.trim(), lieu: $('ol').value.trim() }).then(() => rechargerReglages('Outil ajouté')).catch(echec); }
 
 // ---------- Facture et paiements ----------
 function carteFacture(d) {
@@ -854,6 +939,7 @@ function envoyerPoint() {
 ECRANS.compte = function () {
   rendre(entete(MOI.nom, esc(MOI.email) + ' · ' + esc(MOI.role))
     + '<div class="section"><form class="carte" onsubmit="changerCode(event)"><b>Changer mon code</b><input id="nouveau" type="password" inputmode="numeric" pattern="[0-9]{4,6}" placeholder="4 à 6 chiffres" aria-label="Nouveau code" required><button class="bouton second" type="submit">Enregistrer</button></form>'
+    + (MOI && ['DG', 'DGA', 'STOCK'].indexOf(MOI.role) !== -1 ? '<button class="bouton" onclick="aller(\'reglages\')">Réglages</button>' : '')
     + '<button class="bouton second" onclick="seDeconnecter()">Se déconnecter</button></div>', null);
 };
 function changerCode(ev) { ev.preventDefault(); appel('changerMonCode', { code: $('nouveau').value }).then(() => { toast('Code changé'); revenir(); }).catch(echec); }

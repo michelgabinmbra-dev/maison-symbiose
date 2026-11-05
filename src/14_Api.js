@@ -49,6 +49,15 @@ const ACTIONS_API = {
   ecranGroupes: (a) => ecranGroupes(a.mois),
   enregistrerGroupes: (a) => enregistrerGroupesDuMois(a.mois, a.groupes),
   enregistrerEcheances: (a) => enregistrerEcheancesVehicule(a.immatriculation, a.echeances),
+  // Réglages
+  ecranReglages: () => ecranReglages(),
+  enregistrerMembre: (a) => enregistrerMembre(a.membre),
+  enregistrerClient: (a) => enregistrerClientReglages(a.client),
+  ajouterSites: (a) => ajouterSites(a.client, a.texte),
+  supprimerSite: (a) => supprimerSite(a.client, a.nom),
+  enregistrerVehicule: (a) => enregistrerVehiculeReglages(a.vehicule),
+  enregistrerMateriel: (a) => enregistrerMaterielReglages(a.materiel),
+  ajouterOutil: (a) => ajouterOutil(a.outil, a.lieu),
   // Facture et paiements
   emettreFacture: (a) => emettreFacture(a.numero, { bonCommande: a.bonCommande, delaiJours: a.delaiJours }),
   deposerFacture: (a) => deposerFacture(a.facture, a.date),
