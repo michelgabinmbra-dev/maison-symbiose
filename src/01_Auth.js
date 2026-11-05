@@ -30,10 +30,36 @@ function trouverUtilisateurParEmail(email) {
   for (let i = 1; i < lignes.length; i++) {
     if (String(lignes[i][colEmail]).toLowerCase() === String(email).toLowerCase()) {
       if (lignes[i][entetes.indexOf('Actif')] === false) return null;
-      return { email: lignes[i][colEmail], role: lignes[i][colRole], nom: lignes[i][colNom] };
+      const colDroits = entetes.indexOf('Droits');
+      const droits = colDroits === -1 ? [] : String(lignes[i][colDroits] || '').split(/[,;]+/).map((d) => d.trim()).filter(Boolean);
+      return { email: lignes[i][colEmail], role: lignes[i][colRole], nom: lignes[i][colNom], droits };
     }
   }
   return null;
+}
+
+/**
+ * Droits en plus du rôle (colonne Droits de Utilisateurs, séparés par des virgules), par exemple
+ * « Groupes » pour l'ingénieur qui compose les groupes de maintenance chaque mois.
+ */
+const DROITS = { GROUPES: 'Groupes' };
+
+function aLeDroit(utilisateur, droit) {
+  return !!utilisateur && (utilisateur.droits || []).some((d) => d.toLowerCase() === droit.toLowerCase());
+}
+
+/** Comme exigerRole, mais accepte aussi les personnes qui ont le droit indiqué. */
+function exigerRoleOuDroit(rolesAutorises, droit) {
+  const utilisateur = getUtilisateurCourant();
+  if (utilisateur && aLeDroit(utilisateur, droit)) return utilisateur;
+  return exigerRole(rolesAutorises);
+}
+
+/** Emails des personnes actives qui ont un droit donné. */
+function emailsAvecDroit(droit) {
+  return lireLignes(NOMS_FEUILLES.UTILISATEURS)
+    .filter((u) => u.Email && u.Actif !== false && String(u.Droits || '').split(/[,;]+/).some((d) => d.trim().toLowerCase() === droit.toLowerCase()))
+    .map((u) => u.Email);
 }
 
 /** Lève une erreur si la personne connectée n'a pas un des rôles autorisés. */

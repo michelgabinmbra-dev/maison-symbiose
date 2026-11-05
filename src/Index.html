@@ -434,7 +434,7 @@ ECRANS.preventif = function () {
       + '<span class="txt"><b>' + esc(v.client) + (v.site ? ' · ' + esc(v.site) : '') + '</b><small>' + esc(v.groupe) + ' · ' + esc(v.titre) + (v.faite ? ' · faite le ' + dateCourte(v.date) : (v.prevue ? ' · prévue le ' + dateCourte(v.prevue) : '')) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>';
     rendre(entete('Maintenance préventive', d.groupes.length ? d.groupes.map((g) => esc(g.nom) + (g.chef ? ' (' + esc(g.chef) + ')' : '')).join(' · ') : 'Tu n\'es dans aucun groupe pour l\'instant')
       + '<div class="section">'
-      + (d.peutPlanifier ? '<div class="deux"><button class="bouton" onclick="aller(\'planifier\')">Planifier un passage</button><button class="bouton second" onclick="aller(\'groupes\')">Groupes du mois</button></div>' : '')
+      + (d.peutPlanifier || d.peutComposerGroupes ? '<div class="deux">' + (d.peutPlanifier ? '<button class="bouton" onclick="aller(\'planifier\')">Planifier un passage</button>' : '') + (d.peutComposerGroupes ? '<button class="bouton second" onclick="aller(\'groupes\')">Groupes du mois</button>' : '') + '</div>' : '')
       + '<h2>À faire (' + aFaire.length + ')</h2>' + (aFaire.length ? aFaire.map(ligne).join('') : '<div class="vide">Aucune visite à faire.</div>')
       + (faites.length ? '<h2>Faites (' + faites.length + ')</h2>' + faites.slice(0, 30).map(ligne).join('') : '')
       + '</div>', 'accueil');
@@ -473,7 +473,7 @@ function planifierUI(ev) {
 ECRANS.groupes = function (p) {
   appel('ecranGroupes', { mois: p.mois || '' }).then((d) => {
     etat.groupesMois = d; etat.nbGrp = 0;
-    rendre(entete('Groupes du mois', 'Recomposés chaque mois par toi ou le DGA')
+    rendre(entete('Groupes du mois', 'Recomposés chaque mois')
       + '<div class="section"><div class="carte"><div class="champ"><label for="gmois">Mois</label><input id="gmois" type="month" value="' + esc(d.mois) + '" onchange="aller(\'groupes\',{mois:this.value},true)"></div>'
       + (d.reprise ? '<small style="color:#B45309">' + (d.depuis ? 'Pas encore fait pour ce mois : composition de ' + esc(d.depuis) + ' reprise, ajuste puis enregistre.' : 'Aucun groupe encore : ajoute le premier.') + '</small>' : '<small style="color:#047857">Composition enregistrée pour ce mois.</small>')
       + '</div><div id="lgrp"></div>'

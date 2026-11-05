@@ -20,7 +20,7 @@ function initialiserBaseDeDonnees() {
     proprietes.setProperty(PROP_ID_CLASSEUR, classeur.getId());
   }
 
-  const feuilleUtilisateurs = creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.UTILISATEURS, ['Email', 'Nom', 'Role', 'Actif', 'CodeAcces', 'Telephone']);
+  const feuilleUtilisateurs = creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.UTILISATEURS, ['Email', 'Nom', 'Role', 'Actif', 'CodeAcces', 'Telephone', 'Droits']);
   if (feuilleUtilisateurs && feuilleUtilisateurs.getLastRow() < 2) {
     feuilleUtilisateurs.appendRow(['michelgabinmbra@gmail.com', 'Michel', ROLES.DG, true]);
   }
