@@ -102,6 +102,26 @@ input[type=range]{padding:0;border:none;min-height:36px}
 .section{padding:0 16px;display:flex;flex-direction:column;gap:12px;margin-top:-20px;position:relative}
 .connexion{min-height:100vh;background:linear-gradient(170deg,#0B1442,#142266 55%,#22307F);color:#fff;padding:60px 24px;display:flex;flex-direction:column;gap:18px;position:relative;overflow:hidden}
 .connexion .carte{color:var(--texte);gap:14px;padding:18px}
+/* Tablette et ordinateur : plus large, listes sur deux colonnes, menu sur le côté au-delà de 1100 px */
+@media (min-width:700px){
+  #app{max-width:880px}
+  .tuiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+  nav{max-width:560px}
+  .feuille,.section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+  .feuille>*,.section>*{grid-column:1/-1}
+  .feuille>.item,.section>.item,.feuille>button.item,.section>button.item{grid-column:auto;height:100%}
+  .hero{padding:28px 28px 48px}.entete{padding:18px 28px 38px}.feuille{padding:20px 24px 0}.section{padding:0 24px}
+  .hero h1{font-size:26px}.entete h1{font-size:24px}
+}
+@media (min-width:1100px){
+  #app{max-width:min(1040px,calc(100vw - 170px));margin-left:max(150px,calc((100vw - 1040px)/2));padding-bottom:32px}
+  nav{left:24px;top:24px;bottom:auto;transform:none;width:104px;height:auto;max-width:none;grid-template-columns:1fr;grid-auto-rows:auto;padding:14px 0;gap:6px}
+  nav button{height:64px;font-size:12px}
+  nav>span{order:-1;padding-bottom:6px}
+  nav .plus{margin:0 auto}
+  #toast{bottom:32px}
+  .feuille,.section{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 </style>
 </head>
 <body>

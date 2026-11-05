@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maison Symbiose</title>
+<meta name="theme-color" content="#0B1442">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Symbiose">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  html,body{margin:0;height:100%;background:#0B1442;font-family:Inter,system-ui,sans-serif;color:#fff}
+    #hors{display:none;position:fixed;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:24px}
+  #hors button{min-height:48px;padding:0 24px;border-radius:14px;border:0;font-weight:700;font-size:16px;background:linear-gradient(135deg,#22D3EE,#8B5CF6);color:#fff}
+  #installer{display:none;position:fixed;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:360px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:2;min-height:52px;border:0;border-radius:16px;font-weight:700;font-size:16px;color:#fff;background:linear-gradient(135deg,#22D3EE,#8B5CF6);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+</style>
+</head>
+<body>
+<div id="accueil" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px"><img src="icone-192.png" width="96" height="96" alt="" style="border-radius:24px"><b style="font-size:22px">Maison Symbiose</b><span id="msg" style="color:#C7D2FE">Ouverture…</span><div id="aide" style="display:none;flex-direction:column;gap:12px;max-width:360px"><span style="color:#C7D2FE">Installe l'application sur ce téléphone, cette tablette ou cet ordinateur : elle s'ouvrira ensuite depuis son icône.</span><span id="ios" style="display:none;color:#fff;background:rgba(255,255,255,.1);border-radius:14px;padding:12px">Sur iPhone / iPad : touche <b>Partager</b> puis <b>Sur l'écran d'accueil</b>.</span><a id="ouvrir" style="color:#fff;font-weight:700;padding:12px;border:1px solid rgba(255,255,255,.35);border-radius:14px;text-decoration:none">Ouvrir sans installer</a></div></div>
+<div id="hors"><img src="icone-192.png" width="96" height="96" alt=""><b style="font-size:20px">Pas de connexion internet</b><span>Maison Symbiose a besoin d'internet. Réessaie dès que le réseau revient.</span><button onclick="location.reload()">Réessayer</button></div>
+<button id="installer">Installer l'application</button>
+<script>
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  const APPLI = 'https://script.google.com/macros/s/AKfycbzu3d2dzIdQYUS1zzIdaUA_4sivyThLe8wCaJTynnYTpFhbMJYmHqwDf2bDWs9lLtw/exec';
+  const installee = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  function ouvrir() {
+    const ok = navigator.onLine;
+    document.getElementById('hors').style.display = ok ? 'none' : 'flex';
+    document.getElementById('accueil').style.display = ok ? 'flex' : 'none';
+    // Dans le navigateur, on laisse le temps de proposer l'installation ; une fois installée, on ouvre tout de suite.
+    if (!ok) return;
+    if (installee) { setTimeout(() => location.replace(APPLI), 300); return; }
+    document.getElementById('msg').style.display = 'none';
+    document.getElementById('aide').style.display = 'flex';
+    document.getElementById('ouvrir').href = APPLI;
+    if (/iphone|ipad|ipod/i.test(navigator.userAgent)) document.getElementById('ios').style.display = 'block';
+  }
+  addEventListener('online', ouvrir); ouvrir();
+  let invite = null; const bouton = document.getElementById('installer');
+  addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); invite = e; bouton.style.display = 'block'; });
+  bouton.onclick = () => { if (!invite) return; invite.prompt(); invite.userChoice.finally(() => { bouton.style.display = 'none'; invite = null; }); };
+  addEventListener('appinstalled', () => { bouton.style.display = 'none'; });
+</script>
+</body>
+</html>
