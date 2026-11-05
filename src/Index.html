@@ -347,7 +347,7 @@ ECRANS.affaire = function (p) {
       + (d.peutGerer ? '<select aria-label="Type d\'intervention" onchange="definirType(this.value)">' + TYPES.map((t) => '<option value="' + t + '"' + ((a.TypeIntervention || 'Curatif') === t ? ' selected' : '') + '>' + LIBELLES_TYPE[t] + '</option>').join('') + '</select>' : '<p style="margin:0">Type : <b>' + esc(LIBELLES_TYPE[a.TypeIntervention] || a.TypeIntervention || '') + '</b></p>')
       + (d.peutGerer ? '<div class="puces">' + ['Élevée', 'Moyenne', 'Faible'].map((pr) => '<button class="puce ' + (a.Priorite === pr ? 'on' : '') + '" onclick="definirPriorite(\'' + pr + '\')">' + pr + '</button>').join('') + '</div>' : '')
       + '</div>'
-      + (a.Description ? '<div class="carte"><b style="font-size:13px;color:#5A6585">DEMANDE</b><div style="font-size:14px;white-space:pre-line">' + esc(String(a.Description).slice(0, 600)) + '</div></div>' : '')
+      + (a.Description ? '<div class="carte"><b style="font-size:13px;color:#5A6585">DEMANDE</b><div style="font-size:14px;white-space:pre-line">' + esc(nettoyerMail(a.Description).slice(0, 600)) + '</div></div>' : '')
       + '<div class="carte"><div class="ligne"><b style="font-size:13px;color:#5A6585">RAPPORTS D\'INTERVENTION</b><span style="font-size:13px;color:#5A6585">' + d.rapports.length + '</span></div>'
       + d.rapports.map((r) => '<div class="kv" style="align-items:center"><span><b>' + esc(r.numero) + '</b> · ' + dateCourte(r.date) + ' · ' + esc(r.technicien) + (r.nombrePhotos ? ' · ' + r.nombrePhotos + ' photo' + (r.nombrePhotos > 1 ? 's' : '') : '') + '<br><small style="color:#5A6585">' + esc(String(r.constat).slice(0, 90)) + '</small></span>'
         + '<span style="display:flex;gap:6px"><button class="puce" onclick="pdfRapport(\'' + esc(r.numero) + '\')">PDF</button>' + (d.peutGerer ? '<button class="puce" onclick="envoyerRapport(\'' + esc(r.numero) + '\')">Envoyer</button>' : '') + '</span></div>').join('')
@@ -421,6 +421,11 @@ ECRANS.enligne = function () {
       + '<button class="bouton second" onclick="ECRANS.enligne()">Actualiser</button></div>', null);
   }).catch(echec);
 };
+/** Texte d'un mail capturé, sans les images intégrées [cid:…], les liens <mailto:…> ni les lignes vides en trop. */
+function nettoyerMail(t) {
+  return String(t || '').replace(/\[cid:[^\]]*\]/g, '').replace(/<(mailto|https?):[^>]*>/g, '').replace(/[\uFFFC\uFFFD\u200B]/g, '')
+    .replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
 function cloturerContrat() { appel('cloturerContrat', { numero: numeroCourant() }).then(() => { toast('Dossier clôturé'); rafraichirAffaire(); }).catch(echec); }
 function definirType(t) { appel('definirType', { numero: numeroCourant(), type: t }).then(() => { toast('Type : ' + LIBELLES_TYPE[t]); rafraichirAffaire(); }).catch(echec); }
 function definirPriorite(p) { appel('definirPriorite', { numero: numeroCourant(), priorite: p }).then(() => { toast('Priorité : ' + p); rafraichirAffaire(); }).catch(echec); }
