@@ -345,6 +345,7 @@ ECRANS.affaire = function (p) {
       + d.rapports.map((r) => '<div class="kv" style="align-items:center"><span><b>' + esc(r.numero) + '</b> · ' + dateCourte(r.date) + ' · ' + esc(r.technicien) + (r.nombrePhotos ? ' · ' + r.nombrePhotos + ' photo' + (r.nombrePhotos > 1 ? 's' : '') : '') + '<br><small style="color:#5A6585">' + esc(String(r.constat).slice(0, 90)) + '</small></span>'
         + '<span style="display:flex;gap:6px"><button class="puce" onclick="pdfRapport(\'' + esc(r.numero) + '\')">PDF</button>' + (d.peutGerer ? '<button class="puce" onclick="envoyerRapport(\'' + esc(r.numero) + '\')">Envoyer</button>' : '') + '</span></div>').join('')
       + '<button class="bouton second" onclick="aller(\'rapport\',{numero:\'' + esc(a.NumeroAffaire) + '\'})">+ Nouveau rapport</button></div>'
+      + (d.peutGerer ? carteMessage(d) : '')
       + '<form class="carte" onsubmit="enregistrerSuivi(event)"><b style="font-size:13px;color:#5A6585">SUIVI (alimente le point de situation)</b>'
       + '<div class="champ"><label for="av">Avancement : <span id="avv">' + (Number(a.Avancement) || 0) + '</span> %</label><input id="av" type="range" min="0" max="100" step="10" value="' + (Number(a.Avancement) || 0) + '" oninput="$(\'avv\').textContent=this.value"></div>'
       + '<div class="champ"><label for="pa">Prochaine action</label><input id="pa" value="' + esc(a.ProchaineAction) + '" placeholder="Ex. remplacer le compresseur"></div>'
@@ -381,6 +382,28 @@ ECRANS.affaire = function (p) {
 function numeroCourant() { return etat.affaire.affaire.NumeroAffaire; }
 function rafraichirAffaire() { ECRANS.affaire({ numero: numeroCourant() }); }
 function changerStatut(s) { if (!s) return; appel('changerStatut', { numero: numeroCourant(), statut: s }).then(() => { toast('Statut mis à jour'); rafraichirAffaire(); }).catch(echec); }
+function carteMessage(d) {
+  const t = '<b style="font-size:13px;color:#5A6585">ÉCRIRE AU CLIENT</b>';
+  const histo = d.messages.length ? d.messages.map((m) => '<div class="kv"><span><b>' + dateCourte(m.date) + '</b> · ' + esc(m.par) + '<br><small style="color:#5A6585;white-space:pre-line">' + esc(String(m.texte).slice(0, 160)) + '</small></span></div>').join('') : '';
+  return '<div class="carte"><div class="ligne">' + t + '<span style="font-size:13px;color:#5A6585">' + d.messages.length + ' envoyé' + (d.messages.length > 1 ? 's' : '') + '</span></div>' + histo
+    + '<details><summary style="font-weight:600;color:#2563EB;min-height:44px;display:flex;align-items:center">+ Nouveau message</summary>'
+    + '<form onsubmit="envoyerMessageUI(event)" style="display:flex;flex-direction:column;gap:10px">'
+    + '<b style="font-size:13px">À</b>' + (d.contacts.length ? d.contacts.map((c) => '<label style="display:flex;gap:10px;align-items:center;margin:0"><input type="checkbox" class="cdest" value="' + esc(c) + '" checked> ' + esc(c) + '</label>').join('') : '<small style="color:#5A6585">Aucun contact enregistré pour ce client (Réglages > Clients).</small>')
+    + '<input id="mautre" placeholder="Autre adresse (facultatif)" aria-label="Autre adresse" inputmode="email">'
+    + '<input id="msujet" value="' + esc(d.sujetMessage) + '" aria-label="Objet">'
+    + '<div class="puces">' + d.modelesMessage.map((m, i) => '<button type="button" class="puce" onclick="modeleMessage(' + i + ')">' + esc(m.nom) + '</button>').join('') + '</div>'
+    + '<textarea id="mtexte" rows="5" placeholder="Ton message (Bonjour et la signature sont ajoutés tout seuls)" aria-label="Message" required></textarea>'
+    + '<button class="bouton" type="submit">Envoyer le mail</button></form></details></div>';
+}
+function modeleMessage(i) { $('mtexte').value = etat.affaire.modelesMessage[i].texte; $('mtexte').focus(); }
+function envoyerMessageUI(ev) {
+  ev.preventDefault();
+  const a = Array.from(document.querySelectorAll('.cdest:checked')).map((x) => x.value).concat($('mautre').value.split(/[,;\s]+/).filter(Boolean));
+  if (!a.length) { toast('Choisis au moins un destinataire'); return; }
+  if (/\[(date|heure|durée)\]/.test($('mtexte').value)) { toast('Complète les [crochets] du message'); return; }
+  appel('envoyerMessage', { numero: numeroCourant(), message: { a: a.join(','), sujet: $('msujet').value, texte: $('mtexte').value } })
+    .then((dest) => { toast('Mail envoyé à ' + dest); rafraichirAffaire(); }).catch(echec);
+}
 function cloturerContrat() { appel('cloturerContrat', { numero: numeroCourant() }).then(() => { toast('Dossier clôturé'); rafraichirAffaire(); }).catch(echec); }
 function definirType(t) { appel('definirType', { numero: numeroCourant(), type: t }).then(() => { toast('Type : ' + LIBELLES_TYPE[t]); rafraichirAffaire(); }).catch(echec); }
 function definirPriorite(p) { appel('definirPriorite', { numero: numeroCourant(), priorite: p }).then(() => { toast('Priorité : ' + p); rafraichirAffaire(); }).catch(echec); }

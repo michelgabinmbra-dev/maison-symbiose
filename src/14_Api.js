@@ -27,6 +27,7 @@ const ACTIONS_API = {
   definirPriorite: (a) => definirPrioriteAffaire(a.numero, a.priorite),
   definirType: (a) => definirTypeAffaire(a.numero, a.type),
   cloturerContrat: (a) => cloturerAffaireContrat(a.numero),
+  envoyerMessage: (a) => envoyerMessageClient(a.numero, a.message),
   mettreAJourSuivi: (a) => mettreAJourSuivi(a.numero, a.suivi),
   corrigerClient: (a) => corrigerClientAffaire(a.numero, a.client, a.site),
   changerStatut: (a) => changerStatutParChef(a.numero, a.statut),
@@ -163,6 +164,10 @@ function ecranAffaire(numero) {
     domaines: DOMAINES_RAPPORT,
     etatsControle: ETATS_CONTROLE,
     sousContrat: estSousContrat(affaire),
+    messages: messagesDeLAffaire(numero),
+    contacts: String(contactClient(affaire.Client) || '').split(/[,;\s]+/).filter(Boolean),
+    modelesMessage: MODELES_MESSAGE,
+    sujetMessage: sujetParDefaut(affaire),
     peutCloturer: utilisateur.role === ROLES.DG || utilisateur.role === ROLES.DGA || aLeDroit(utilisateur, DROITS.PLANNING),
   };
 }

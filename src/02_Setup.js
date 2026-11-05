@@ -47,6 +47,7 @@ function initialiserBaseDeDonnees() {
   ]);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.GROUPES, ['NomGroupe', 'NomChef', 'ChefEmail', 'Membres', 'Zone', 'Actif', 'Mois']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.CHECKLIST_PREVENTIF, ['Section', 'Element']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.MESSAGES, ['NumeroAffaire', 'Date', 'Par', 'Destinataires', 'Sujet', 'Texte']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.FACTURES, [
     'NumeroFacture', 'NumeroAffaire', 'Montant', 'DateEmission', 'DelaiPaiementJours',
     'StatutPaiement', 'DateReception', 'DatePaiement', 'NumeroDevis', 'NumeroDocument', 'BonCommande',

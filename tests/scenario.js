@@ -100,6 +100,10 @@ etape('clôture sans rapport (doit échouer)', () => { try { api(J, 'cloturerCon
 etape('rapport UCP', () => api(J, 'creerRapport', { numero: nc, rapport: { domaine: 'Climatisation', constat: 'Bac bouché', travaux: 'Débouchage', photos: [] } }));
 etape('clôture contrat', () => { api(J, 'cloturerContrat', { numero: nc }); return api(J, 'ecranAffaire', { numero: nc }).affaire.Statut; });
 etape('travaux AFG pas sous contrat', () => api(J, 'ecranAffaire', { numero: num }).sousContrat);
+etape('message libre', () => api(J, 'envoyerMessage', { numero: nc, message: { a: 'x@ucp-fm.ci, y@ucp-fm.ci', texte: 'Intervention demain 9 h.\nMerci.' } }));
+etape('message sans texte (doit échouer)', () => { try { api(J, 'envoyerMessage', { numero: nc, message: { a: 'x@ucp-fm.ci' } }); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué : ' + e.message; } });
+etape('message refusé au technicien', () => { try { api(sk, 'envoyerMessage', { numero: nc, message: { a: 'x@ucp-fm.ci', texte: 'x' } }); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué'; } });
+etape('historique messages', () => { const e = api(J, 'ecranAffaire', { numero: nc }); return [e.messages.length, e.sujetMessage, H.MAILS[H.MAILS.length - 1].subject]; });
 ['F3','F5','F8'].forEach((id) => { const t = Buffer.from(H.FILES[id].bytes).toString(); console.log(id, H.FILES[id].name, /RAPPORT DE MAINTENANCE|RAPPORT D'INTERVENTION|FACTURE/.exec(t)[0], 'imgs', (t.match(/<img/g)||[]).length); });
 console.log('rappel groupes mois suivant (reprise) :', JSON.stringify(groupesDuMois('2026-12')).slice(0,120));
 console.log('feuille Groupes :', JSON.stringify(H.CLASSEUR.sheets['Groupes'].rows));
