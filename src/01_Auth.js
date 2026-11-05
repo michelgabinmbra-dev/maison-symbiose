@@ -40,9 +40,9 @@ function trouverUtilisateurParEmail(email) {
 
 /**
  * Droits en plus du rôle (colonne Droits de Utilisateurs, séparés par des virgules), par exemple
- * « Groupes » pour l'ingénieur qui compose les groupes de maintenance chaque mois.
+ * « Planning » pour l'ingénieure qui compose les groupes du mois et planifie le préventif.
  */
-const DROITS = { GROUPES: 'Groupes' };
+const DROITS = { PLANNING: 'Planning' };
 
 function aLeDroit(utilisateur, droit) {
   return !!utilisateur && (utilisateur.droits || []).some((d) => d.toLowerCase() === droit.toLowerCase());

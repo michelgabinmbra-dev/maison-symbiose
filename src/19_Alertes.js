@@ -2,7 +2,7 @@
  * Alertes automatiques et envois programmés :
  * - véhicules (GNAGNE Arnaud, rôle VEHICULES) : visite technique, assurance, vidange au
  *   kilométrage, véhicule pris et jamais déposé ;
- * - rappel à la personne qui compose les groupes (droit Groupes, sinon DG / DGA) tant que les
+ * - rappel à la personne qui compose les groupes (droit Planning, sinon DG / DGA) tant que les
  *   groupes du mois ne sont pas recomposés ;
  * - chaque vendredi à 17 h, point de situation envoyé aux clients qui l'ont demandé
  *   (colonne PointHebdo = Oui dans la feuille Clients).
@@ -87,7 +87,7 @@ function rappelerGroupesDuMois() {
     const sujet = 'Groupes de ' + c.mois + ' à recomposer';
     const message = 'Les groupes de maintenance de ' + c.mois + ' ne sont pas encore faits. En attendant, ceux de ' + (c.depuis || 'aucun mois') + ' restent en vigueur.\n\n'
       + 'Dans l\'application : Maintenance préventive > Groupes du mois.';
-    const responsables = emailsAvecDroit(DROITS.GROUPES);
+    const responsables = emailsAvecDroit(DROITS.PLANNING);
     if (responsables.length) MailApp.sendEmail(responsables.join(','), '[Maison Symbiose] ' + sujet, message);
     else alerterRoles([ROLES.DG, ROLES.DGA], sujet, message);
   }

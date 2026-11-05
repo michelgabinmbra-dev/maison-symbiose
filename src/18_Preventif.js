@@ -59,7 +59,7 @@ function groupesDuMois(mois) {
 
 /** Remplace la composition des groupes d'un mois. groupes : [{nom, chefEmail, membres: [emails], zone}]. */
 function enregistrerGroupesDuMois(mois, groupes) {
-  exigerRoleOuDroit([ROLES.DG, ROLES.DGA], DROITS.GROUPES);
+  exigerRoleOuDroit([ROLES.DG, ROLES.DGA], DROITS.PLANNING);
   mois = mois || moisCourant();
   if (!/^\d{4}-\d{2}$/.test(mois)) throw new Error('Mois invalide : ' + mois + ' (format aaaa-mm).');
   const utilisateurs = lireLignes(NOMS_FEUILLES.UTILISATEURS);
@@ -85,9 +85,9 @@ function enregistrerGroupesDuMois(mois, groupes) {
   return propres.length;
 }
 
-/** Écran de composition des groupes du mois (DG, DGA ou personne ayant le droit Groupes). */
+/** Écran de composition des groupes du mois (DG, DGA ou personne ayant le droit Planning). */
 function ecranGroupes(mois) {
-  exigerRoleOuDroit([ROLES.DG, ROLES.DGA], DROITS.GROUPES);
+  exigerRoleOuDroit([ROLES.DG, ROLES.DGA], DROITS.PLANNING);
   const c = groupesDuMois(mois);
   return {
     mois: c.mois, reprise: c.reprise, depuis: c.depuis || '',
@@ -119,7 +119,7 @@ function trimestreCourant() {
  * details : {client, sites: [..], groupe, trimestre, datePrevue}
  */
 function planifierPreventif(details) {
-  exigerRole([ROLES.DG, ROLES.DGA]);
+  exigerRoleOuDroit([ROLES.DG, ROLES.DGA], DROITS.PLANNING);
   if (!details || !details.client || !details.groupe || !(details.sites || []).length) {
     throw new Error('Client, groupe et au moins un site sont obligatoires.');
   }
@@ -163,8 +163,8 @@ function ecranPreventif() {
   return {
     groupes: groupes.map((g) => ({ nom: g.NomGroupe, chef: g.NomChef || g.ChefEmail, zone: g.Zone || '' })),
     visites,
-    peutPlanifier: utilisateur.role === ROLES.DG || utilisateur.role === ROLES.DGA,
-    peutComposerGroupes: utilisateur.role === ROLES.DG || utilisateur.role === ROLES.DGA || aLeDroit(utilisateur, DROITS.GROUPES),
+    peutPlanifier: utilisateur.role === ROLES.DG || utilisateur.role === ROLES.DGA || aLeDroit(utilisateur, DROITS.PLANNING),
+    peutComposerGroupes: utilisateur.role === ROLES.DG || utilisateur.role === ROLES.DGA || aLeDroit(utilisateur, DROITS.PLANNING),
     trimestre: trimestreCourant(),
   };
 }
