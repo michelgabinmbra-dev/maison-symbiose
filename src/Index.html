@@ -850,10 +850,18 @@ const REGLAGES = {
     }).join('') || '<div class="vide">Ajoute d\'abord un client.</div>';
   },
   vehicules(d) {
-    return d.vehicules.map((v) => '<div class="item"><span class="ico vert">' + svg('auto', 22, '#fff') + '</span><span class="txt"><b>' + esc(v.immatriculation) + '</b><small>' + esc([v.marque, v.modele].filter(Boolean).join(' ')) + (v.visiteTechnique ? ' · VT ' + esc(v.visiteTechnique) : '') + '</small></span></div>').join('')
-      + '<form class="carte" style="gap:10px" onsubmit="enregistrerVehiculeUI(event)"><b>Ajouter un véhicule</b>' + champ('vi', 'Immatriculation', '', ' required')
-      + '<div class="deux">' + champ('vm', 'Marque', '') + champ('vo', 'Modèle', '') + '</div><button class="bouton" type="submit">Ajouter</button>'
-      + '<small style="color:#5A6585">Les échéances (visite, assurance, vidange) se saisissent sur la fiche du véhicule.</small></form>';
+    etat.docsVeh = {};
+    return d.vehicules.map((v, i) => '<div class="carte" style="gap:6px"><div class="ligne"><b>' + esc(v.immatriculation) + '</b><a href="#" onclick="remplirVehicule(' + i + ');return false" style="font-size:13px">Modifier</a></div><small style="color:#5A6585">' + esc([v.marque, v.modele].filter(Boolean).join(' '))
+        + (v.visiteTechnique ? ' · VT ' + dateCourte(v.visiteTechnique) : '') + (v.assurance ? ' · Assurance ' + dateCourte(v.assurance) : '') + (v.kmProchaineVidange ? ' · Vidange ' + Number(v.kmProchaineVidange).toLocaleString('fr-FR') + ' km' : '') + '</small>'
+        + boutonsDocuments(v.documents) + '</div>').join('')
+      + '<form class="carte" style="gap:10px" onsubmit="enregistrerVehiculeUI(event)"><b id="vtitre">Ajouter un véhicule</b>' + champ('vi', 'Immatriculation', '', ' required')
+      + '<div class="deux">' + champ('vm', 'Marque', '') + champ('vo', 'Modèle', '') + '</div>'
+      + '<div class="deux">' + champ('vvt', 'Fin visite technique', '', ' type="date"') + champ('vas', 'Fin assurance', '', ' type="date"') + '</div>'
+      + champ('vkm', 'Prochaine vidange (km)', '', ' type="number" inputmode="numeric"')
+      + '<b style="font-size:13px;color:#5A6585;margin-top:4px">DOCUMENTS (photo)</b>'
+      + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' + Object.keys(DOCS_VEHICULE).map((k) => '<div class="photo" id="zd_' + k + '" style="height:96px;padding:6px"><span>' + svg('photo', 22, 'currentColor', 1.8) + '</span><b style="font-size:12px;text-align:center">' + DOCS_VEHICULE[k] + '</b><input type="file" accept="image/*" capture="environment" aria-label="Photo ' + DOCS_VEHICULE[k] + '" onchange="photoDocVehicule(this,\'' + k + '\')"></div>').join('') + '</div>'
+      + '<button class="bouton" type="submit" id="vbtn">Enregistrer le véhicule</button>'
+      + '<small style="color:#5A6585">Arnaud est prévenu 15 jours avant la fin de la visite ou de l\'assurance, et 500 km avant la vidange.</small></form>';
   },
   stock(d) {
     const s = d.stock;
@@ -863,8 +871,12 @@ const REGLAGES = {
       + '<div class="deux">' + champ('se', 'Quantité reçue', '', ' type="number" inputmode="numeric"') + champ('sp', 'Prix unitaire (F)', '', ' type="number" inputmode="numeric"') + '</div>'
       + champ('ss', 'Seuil d\'alerte (Jean prévenu en dessous)', '', ' type="number" inputmode="numeric"')
       + '<button class="bouton" type="submit">Enregistrer</button></form>'
-      + '<h2>Outils</h2>' + s.outils.map((o) => '<div class="kv"><span>' + esc(o.outil) + (o.lieu ? ' · ' + esc(o.lieu) : '') + '</span><span>' + esc(o.statut) + '</span></div>').join('')
-      + '<form class="carte" style="gap:10px" onsubmit="ajouterOutilUI(event)"><b>Ajouter un outil</b><div class="deux">' + champ('on', 'Outil', '', ' required') + champ('ol', 'Rangé à', '') + '</div><button class="bouton" type="submit">Ajouter</button></form>';
+      + '<h2>Outils · ' + s.outils.length + '</h2>' + s.outils.map((o) => '<div class="kv"><span>' + (o.photo ? '<a href="#" aria-label="Voir la photo" onclick="voirImage(\'' + esc(o.photo) + '\',\'' + esc(o.outil).replace(/'/g, '&#39;') + '\');return false">' + svg('photo', 16, '#2563EB', 2) + '</a> ' : '') + esc(o.outil) + (o.lieu ? ' · ' + esc(o.lieu) : '') + '</span><span>' + esc(o.statut) + '</span></div>').join('')
+      + '<form class="carte" style="gap:10px" onsubmit="ajouterOutilUI(event)"><b>Ajouter un outil</b>' + champ('on', 'Outil', '', ' required placeholder="Ex. Perceuse Bosch"')
+      + '<div class="deux">' + champ('oq', 'Nombre', '1', ' type="number" min="1" max="50" inputmode="numeric"') + champ('ol', 'Rangé à', '') + '</div>'
+      + '<div class="photo" id="zoutil" style="height:96px">' + svg('photo', 26, 'currentColor', 1.8) + '<b>Photo de l\'outil</b><input type="file" accept="image/*" capture="environment" aria-label="Photo de l\'outil" onchange="photoOutil(this)"></div>'
+      + '<small style="color:#5A6585">Avec un nombre supérieur à 1, chaque exemplaire est numéroté (Perceuse n°1, n°2…) pour savoir qui a pris lequel.</small>'
+      + '<button class="bouton" type="submit" id="obtn">Ajouter</button></form>';
   },
 };
 function enregistrerMembreUI(ev, i) {
@@ -881,9 +893,58 @@ function enregistrerClientUI(ev, i) {
 }
 function ajouterSitesUI(ci) { appel('ajouterSites', { client: etat.reglages.clients[ci].nom, texte: $('st' + ci).value }).then((n) => rechargerReglages(n + ' site(s) ajouté(s)')).catch(echec); }
 function supprimerSiteUI(ci, si) { const s = etat.reglages.sites[si]; if (!confirm('Retirer ' + s.nom + ' ?')) return; appel('supprimerSite', { client: s.client, nom: s.nom }).then(() => rechargerReglages('Site retiré')).catch(echec); }
-function enregistrerVehiculeUI(ev) { ev.preventDefault(); appel('enregistrerVehicule', { vehicule: { immatriculation: $('vi').value, marque: $('vm').value, modele: $('vo').value } }).then(() => rechargerReglages('Véhicule enregistré')).catch(echec); }
+const DOCS_VEHICULE = { carteGrise: 'Carte grise', assurance: 'Assurance', visiteTechnique: 'Visite technique' };
+function photoDocVehicule(input, k) {
+  const f = input.files && input.files[0]; if (!f) return;
+  reduireImage(f, 1400, 0.8).then((url) => {
+    etat.docsVeh[k] = url.split(',')[1];
+    const z = $('zd_' + k); z.style.backgroundImage = 'url(' + url + ')'; z.style.backgroundSize = 'cover'; z.style.backgroundPosition = 'center';
+    const b = z.querySelector('b'); b.textContent = '✓ ' + DOCS_VEHICULE[k]; b.style.cssText = 'font-size:12px;background:#fff;color:#047857;border-radius:8px;padding:2px 6px';
+  }).catch(() => toast('Photo illisible'));
+}
+function remplirVehicule(i) {
+  const v = etat.reglages.vehicules[i];
+  $('vi').value = v.immatriculation; $('vm').value = v.marque; $('vo').value = v.modele;
+  $('vvt').value = v.visiteTechnique || ''; $('vas').value = v.assurance || ''; $('vkm').value = v.kmProchaineVidange || '';
+  $('vtitre').textContent = 'Modifier ' + v.immatriculation; $('vi').scrollIntoView({ block: 'center' });
+}
+function enregistrerVehiculeUI(ev) {
+  ev.preventDefault();
+  $('vbtn').disabled = true; $('vbtn').textContent = 'Envoi en cours…';
+  appel('enregistrerVehicule', { vehicule: { immatriculation: $('vi').value, marque: $('vm').value, modele: $('vo').value,
+    visiteTechnique: $('vvt').value, assurance: $('vas').value, kmProchaineVidange: $('vkm').value, documents: etat.docsVeh } })
+    .then(() => rechargerReglages('Véhicule enregistré')).catch((e) => { $('vbtn').disabled = false; $('vbtn').textContent = 'Enregistrer le véhicule'; echec(e); });
+}
+/** Boutons « voir » des documents d'un véhicule. */
+function boutonsDocuments(docs) {
+  const k = Object.keys(DOCS_VEHICULE).filter((x) => docs && docs[x]);
+  return k.length ? '<div class="puces" style="margin:0">' + k.map((x) => '<button type="button" class="puce" onclick="voirImage(\'' + esc(docs[x]) + '\',\'' + DOCS_VEHICULE[x] + '\')">' + svg('photo', 16, 'currentColor', 2) + ' ' + DOCS_VEHICULE[x] + '</button>').join('') + '</div>' : '';
+}
+/** Affiche une photo enregistrée (outil, document) en plein écran. */
+function voirImage(id, titre) {
+  toast('Chargement…');
+  appel('imageDrive', { id }).then((url) => {
+    const f = document.createElement('div');
+    f.setAttribute('role', 'dialog'); f.setAttribute('aria-label', titre || 'Photo');
+    f.style.cssText = 'position:fixed;inset:0;z-index:99;background:rgba(15,23,51,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:12px';
+    f.innerHTML = '<b style="color:#fff">' + esc(titre || '') + '</b><img src="' + url + '" alt="' + esc(titre || 'Photo') + '" style="max-width:100%;max-height:78vh;border-radius:12px"><button class="bouton" style="max-width:240px">Fermer</button>';
+    f.onclick = () => f.remove(); document.body.appendChild(f);
+  }).catch(echec);
+}
 function enregistrerMaterielUI(ev) { ev.preventDefault(); appel('enregistrerMateriel', { materiel: { materiel: $('sm').value.trim(), entree: $('se').value, prix: $('sp').value, seuil: $('ss').value } }).then(() => rechargerReglages('Stock mis à jour')).catch(echec); }
-function ajouterOutilUI(ev) { ev.preventDefault(); appel('ajouterOutil', { outil: $('on').value.trim(), lieu: $('ol').value.trim() }).then(() => rechargerReglages('Outil ajouté')).catch(echec); }
+function photoOutil(input) {
+  const f = input.files && input.files[0]; if (!f) return;
+  reduireImage(f, 1024, 0.75).then((url) => {
+    etat.photoOutil = url.split(',')[1];
+    const z = $('zoutil'); z.style.backgroundImage = 'url(' + url + ')'; z.style.backgroundSize = 'cover'; z.style.backgroundPosition = 'center'; const b = z.querySelector('b'); b.textContent = '✓ Photo prise'; b.style.cssText = 'background:#fff;color:#047857;border-radius:8px;padding:2px 8px';
+  }).catch(() => toast('Photo illisible'));
+}
+function ajouterOutilUI(ev) {
+  ev.preventDefault(); $('obtn').disabled = true;
+  appel('ajouterOutil', { outil: $('on').value.trim(), lieu: $('ol').value.trim(), quantite: $('oq').value, photo: etat.photoOutil || '' })
+    .then((noms) => { etat.photoOutil = ''; rechargerReglages(noms.length > 1 ? noms.length + ' outils ajoutés' : 'Outil ajouté'); })
+    .catch((e) => { $('obtn').disabled = false; echec(e); });
+}
 
 // ---------- Facture et paiements ----------
 function carteFacture(d) {
@@ -1050,6 +1111,7 @@ ECRANS.vehicule = function (p) {
     + (depot && v.dernierKm != null ? '<div class="kv"><span>Pris à</span><span>' + v.dernierKm.toLocaleString('fr-FR') + ' km par ' + esc(v.conducteur) + '</span></div>' : '')
     + '<button class="bouton" type="submit">' + (depot ? 'Valider le dépôt' : 'Valider la prise') + '</button>'
     + '<small style="color:#5A6585;text-align:center">Une anomalie de kilométrage alerte le référent véhicules.</small></div></form>'
+    + (v.documents && Object.keys(v.documents).length ? '<div class="section" style="margin-top:12px"><div class="carte" style="gap:8px"><b style="font-size:13px;color:#5A6585">DOCUMENTS DU VÉHICULE</b>' + boutonsDocuments(v.documents) + '</div></div>' : '')
     + carteEcheances(v), 'vehicules');
 };
 function carteEcheances(v) {
@@ -1118,7 +1180,7 @@ ECRANS.materiel = function () {
     ajouterLigneMat();
   }).catch(echec);
 };
-function cocheOutil(o, cls) { return '<label style="display:flex;gap:10px;align-items:center;min-height:40px"><input type="checkbox" class="' + cls + '" value="' + esc(o.outil) + '" style="width:20px;height:20px"> ' + esc(o.outil) + (o.lieu ? ' <small style="color:#5A6585">· ' + esc(o.lieu) + '</small>' : '') + '</label>'; }
+function cocheOutil(o, cls) { return '<label style="display:flex;gap:10px;align-items:center;min-height:40px"><input type="checkbox" class="' + cls + '" value="' + esc(o.outil) + '" style="width:20px;height:20px"> ' + esc(o.outil) + (o.lieu ? ' <small style="color:#5A6585">· ' + esc(o.lieu) + '</small>' : '') + (o.photo ? ' <a href="#" aria-label="Voir la photo" onclick="event.preventDefault();event.stopPropagation();voirImage(\'' + esc(o.photo) + '\',\'' + esc(o.outil).replace(/'/g, '&#39;') + '\')">' + svg('photo', 16, '#2563EB', 2) + '</a>' : '') + '</label>'; }
 function ajouterLigneMat() {
   const d = etat.materiel, div = document.createElement('div');
   div.className = 'deux ligneMat';

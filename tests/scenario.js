@@ -174,3 +174,11 @@ etape('une seule fois', () => verifierPlanningHebdo(new Date('2026-11-07T20:00:0
 etape('mail planning Koffi', () => H.MAILS.slice(nmp).filter((m) => /planning/i.test(m.subject)).map((m) => m.to + ' | ' + m.subject + '\n' + m.body).join('\n---\n'));
 etape('technicien ne peut pas envoyer le planning', () => { try { api(sk, 'envoyerPlannings', {}); return 'PAS BLOQUÉ'; } catch (e) { return 'bloqué'; } });
 console.log(H.MAILS.filter((m) => /Ton planning/.test(m.subject)).pop().body);
+// outils en nombre avec photo, véhicule avec échéances et documents (06/11)
+etape('3 perceuses avec photo', () => api(J, 'ajouterOutil', { outil: 'Perceuse', lieu: 'Bureau', quantite: 3, photo }));
+etape('2 de plus (suite de la numérotation)', () => api(J, 'ajouterOutil', { outil: 'Perceuse', quantite: 2 }));
+const idPh = api(J, 'ecranMateriel', {}).outils.filter((o) => o.outil === 'Perceuse n°1')[0].photo;
+etape('photo outil visible', () => api(sk, 'imageDrive', { id: idPh }).slice(0, 15));
+etape('fichier inconnu refusé', () => { try { api(sk, 'imageDrive', { id: 'F1' }); return 'PAS BLOQUÉ'; } catch (e) { return e.message; } });
+etape('véhicule complet', () => api(J, 'enregistrerVehicule', { vehicule: { immatriculation: '1234 AB 01', marque: 'Toyota', modele: 'Hilux', visiteTechnique: '2026-11-15', assurance: '2027-03-01', kmProchaineVidange: 85000, documents: { carteGrise: photo, assurance: photo } } }));
+etape('ajout VT plus tard (garde les autres)', () => { api(J, 'enregistrerVehicule', { vehicule: { immatriculation: '1234 AB 01', marque: 'Toyota', modele: 'Hilux', documents: { visiteTechnique: photo } } }); const v = api(J, 'ecranVehicules', {}).filter((x) => x.immatriculation === '1234 AB 01')[0]; return [Object.keys(v.documents), v.visiteTechnique, v.assurance, v.kmProchaineVidange, v.alertes.map((a) => a.texte)]; });

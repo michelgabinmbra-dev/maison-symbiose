@@ -29,13 +29,14 @@ function ecranReglages() {
       materiel: lireLignes(NOMS_FEUILLES.STOCK_MATERIEL).filter((m) => m.Materiel)
         .map((m) => ({ materiel: m.Materiel, quantite: Number(m.Quantite) || 0, prix: Number(m.PrixUnitaire) || 0, seuil: Number(m.SeuilAlerte) || 0 })),
       outils: lireLignes(NOMS_FEUILLES.STOCK_OUTILLAGE).filter((o) => o.Outil)
-        .map((o) => ({ outil: o.Outil, lieu: o.Lieu || '', statut: o.Statut })),
+        .map((o) => ({ outil: o.Outil, lieu: o.Lieu || '', statut: o.Statut, photo: o.Photo || '' })),
     };
   }
   if (onglets.indexOf('vehicules') !== -1) {
     d.vehicules = lireLignes(NOMS_FEUILLES.VEHICULES).filter((v) => v.Immatriculation).map((v) => ({
       immatriculation: v.Immatriculation, marque: v.Marque || '', modele: v.Modele || '',
       visiteTechnique: ymd(v.DateVisiteTechnique), assurance: ymd(v.DateAssurance),
+      kmProchaineVidange: Number(v.KmProchaineVidange) || '', documents: documentsVehicule(v),
     }));
   }
   if (onglets.indexOf('sites') !== -1) {
@@ -142,7 +143,27 @@ function enregistrerVehiculeReglages(v) {
   exigerRole(ROLES_REGLAGES.concat([ROLES.VEHICULES]));
   const imm = String(v && v.immatriculation || '').trim().toUpperCase();
   if (!imm) throw new Error("L'immatriculation est obligatoire.");
-  return ecrireLigne(NOMS_FEUILLES.VEHICULES, 'Immatriculation', imm, { Marque: String(v.marque || ''), Modele: String(v.modele || '') });
+  const champs = { Marque: String(v.marque || ''), Modele: String(v.modele || '') };
+  // Échéances et documents saisis en même temps que le véhicule (demande de Michel du 06/11).
+  if (v.visiteTechnique) champs.DateVisiteTechnique = new Date(v.visiteTechnique);
+  if (v.assurance) champs.DateAssurance = new Date(v.assurance);
+  if (Number(v.kmProchaineVidange) > 0) champs.KmProchaineVidange = Number(v.kmProchaineVidange);
+  const nouveaux = {};
+  Object.keys(DOCUMENTS_VEHICULE).forEach((k) => {
+    if (v.documents && v.documents[k]) nouveaux[k] = enregistrerImageDrive(v.documents[k], imm + ' - ' + DOCUMENTS_VEHICULE[k] + '.jpg');
+  });
+  if (Object.keys(nouveaux).length) {
+    const existant = trouverLigneParValeur(getFeuilleDonnees(NOMS_FEUILLES.VEHICULES), 'Immatriculation', imm);
+    champs.Documents = JSON.stringify(Object.assign(existant ? documentsVehicule(ligneVersObjet(existant.entetes, existant.ligne)) : {}, nouveaux));
+  }
+  return ecrireLigne(NOMS_FEUILLES.VEHICULES, 'Immatriculation', imm, champs);
+}
+
+const DOCUMENTS_VEHICULE = { carteGrise: 'Carte grise', assurance: 'Assurance', visiteTechnique: 'Visite technique' };
+
+/** {carteGrise: idDrive, assurance: idDrive, visiteTechnique: idDrive} (ceux qui existent). */
+function documentsVehicule(v) {
+  try { return JSON.parse(v.Documents || '{}'); } catch (e) { return {}; }
 }
 
 /** Ajoute du matériel au stock (entrée) et/ou règle son seuil d'alerte. */

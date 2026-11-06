@@ -62,12 +62,12 @@ function initialiserBaseDeDonnees() {
     'NumeroDepense', 'NumeroAffaire', 'Categorie', 'Montant', 'Date', 'Description', 'CreePar',
   ]);
 
-  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.VEHICULES, ['Immatriculation', 'Marque', 'Modele', 'DateVisiteTechnique', 'DateAssurance', 'KmProchaineVidange']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.VEHICULES, ['Immatriculation', 'Marque', 'Modele', 'DateVisiteTechnique', 'DateAssurance', 'KmProchaineVidange', 'Documents']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.MOUVEMENTS_VEHICULE, [
     'Immatriculation', 'Conducteur', 'Action', 'Kilometrage', 'VilleParcourue', 'PhotoUrl', 'Date',
   ]);
 
-  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.STOCK_OUTILLAGE, ['Outil', 'Lieu', 'Statut', 'DerniereMaj']);
+  creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.STOCK_OUTILLAGE, ['Outil', 'Lieu', 'Statut', 'DerniereMaj', 'Photo']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.STOCK_MATERIEL, ['Materiel', 'Quantite', 'PrixUnitaire', 'SeuilAlerte']);
   creerFeuilleSiAbsente(classeur, NOMS_FEUILLES.MOUVEMENTS_OUTILLAGE, [
     'Outil', 'Agent', 'Action', 'Date', 'LieuDeclare', 'ConfirmeParJean',

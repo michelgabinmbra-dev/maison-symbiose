@@ -20,15 +20,55 @@ const ROLES_GESTION_STOCK = [ROLES.STOCK, ROLES.DG, ROLES.DGA];
 
 // ---------- Outillage ----------
 
-function ajouterOutil(outil, lieu) {
+/**
+ * Ajoute un outil. Avec une quantité > 1, chaque exemplaire est numéroté (« Perceuse n°1 »,
+ * « Perceuse n°2 »…) pour savoir qui a pris lequel. photo : base64 jpeg facultatif, partagé.
+ * Renvoie les noms créés.
+ */
+function ajouterOutil(outil, lieu, quantite, photo) {
   exigerRole(ROLES_GESTION_STOCK);
+  outil = String(outil || '').trim();
   if (!outil) {
     throw new Error("Le nom de l'outil est obligatoire.");
   }
-  if (trouverLigneParValeur(getFeuilleDonnees(NOMS_FEUILLES.STOCK_OUTILLAGE), 'Outil', outil)) {
-    throw new Error('Cet outil existe déjà : ' + outil);
+  const n = Math.max(1, Math.min(50, Math.floor(Number(quantite) || 1)));
+  const feuille = getFeuilleDonnees(NOMS_FEUILLES.STOCK_OUTILLAGE);
+  const existe = (nom) => !!trouverLigneParValeur(feuille, 'Outil', nom);
+  let noms;
+  if (n === 1) {
+    if (existe(outil)) throw new Error('Cet outil existe déjà : ' + outil);
+    noms = [outil];
+  } else {
+    // On continue la numérotation si des exemplaires existent déjà.
+    noms = [];
+    for (let i = 1; noms.length < n; i++) { if (!existe(outil + ' n°' + i)) noms.push(outil + ' n°' + i); }
   }
-  getFeuilleDonnees(NOMS_FEUILLES.STOCK_OUTILLAGE).appendRow([outil, lieu || '', STATUTS_OUTIL.DISPONIBLE, new Date()]);
+  const idPhoto = photo ? enregistrerImageDrive(photo, 'Outil ' + outil + '.jpg') : '';
+  const entetes = feuille.getRange(1, 1, 1, feuille.getLastColumn()).getValues()[0];
+  noms.forEach((nom) => {
+    const valeurs = { Outil: nom, Lieu: lieu || '', Statut: STATUTS_OUTIL.DISPONIBLE, DerniereMaj: new Date(), Photo: idPhoto };
+    feuille.appendRow(entetes.map((e) => (valeurs[e] !== undefined ? valeurs[e] : '')));
+  });
+  return noms;
+}
+
+const NOM_DOSSIER_PHOTOS_LOGISTIQUE = 'Maison Symbiose - Photos outils et véhicules';
+
+function enregistrerImageDrive(base64, nom) {
+  return obtenirOuCreerDossier(NOM_DOSSIER_PHOTOS_LOGISTIQUE)
+    .createFile(Utilities.newBlob(Utilities.base64Decode(base64), 'image/jpeg', nom)).getId();
+}
+
+/** Image Drive en data URL pour l'afficher dans l'appli (les fichiers restent privés). */
+function imageDrive(id) {
+  exigerRole(Object.values(ROLES));
+  if (!id) throw new Error('Pas de photo.');
+  // Seulement les photos d'outils et les documents de véhicules, pas n'importe quel fichier du Drive.
+  const connus = lireLignes(NOMS_FEUILLES.STOCK_OUTILLAGE).map((o) => o.Photo)
+    .concat([].concat.apply([], lireLignes(NOMS_FEUILLES.VEHICULES).map((v) => Object.values(documentsVehicule(v)))));
+  if (connus.indexOf(id) === -1) throw new Error('Photo introuvable.');
+  const b = DriveApp.getFileById(id).getBlob();
+  return 'data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes());
 }
 
 /** "Je prends" : l'outil passe en Sorti, avec le lieu où l'agent l'emporte. */

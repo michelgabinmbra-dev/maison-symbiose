@@ -70,7 +70,8 @@ const ACTIONS_API = {
   supprimerSite: (a) => supprimerSite(a.client, a.nom),
   enregistrerVehicule: (a) => enregistrerVehiculeReglages(a.vehicule),
   enregistrerMateriel: (a) => enregistrerMaterielReglages(a.materiel),
-  ajouterOutil: (a) => ajouterOutil(a.outil, a.lieu),
+  ajouterOutil: (a) => ajouterOutil(a.outil, a.lieu, a.quantite, a.photo),
+  imageDrive: (a) => imageDrive(a.id),
   // Facture et paiements
   emettreFacture: (a) => emettreFacture(a.numero, { bonCommande: a.bonCommande, delaiJours: a.delaiJours }),
   deposerFacture: (a) => deposerFacture(a.facture, a.date),
@@ -229,6 +230,7 @@ function ecranVehicules() {
       dateDernier: dernier ? dernier.Date : null,
       visiteTechnique: ymd(v.DateVisiteTechnique), assurance: ymd(v.DateAssurance),
       kmProchaineVidange: Number(v.KmProchaineVidange) || null,
+      documents: documentsVehicule(v),
       alertes: alertesVehicule(v, dernier),
     };
   });
@@ -238,7 +240,7 @@ function ecranMateriel() {
   exigerRole(Object.values(ROLES));
   const mouvementsMateriel = lireLignes(NOMS_FEUILLES.MOUVEMENTS_MATERIEL);
   return {
-    outils: lireLignes(NOMS_FEUILLES.STOCK_OUTILLAGE).map((o) => ({ outil: o.Outil, lieu: o.Lieu, statut: o.Statut })),
+    outils: lireLignes(NOMS_FEUILLES.STOCK_OUTILLAGE).map((o) => ({ outil: o.Outil, lieu: o.Lieu, statut: o.Statut, photo: o.Photo || '' })),
     nonRendus: listerOutilsNonRendus(),
     materiel: lireLignes(NOMS_FEUILLES.STOCK_MATERIEL).map((m) => ({ materiel: m.Materiel, quantite: m.Quantite })),
     sortiesEnCours: mouvementsMateriel.filter((m) => m.QuantitePosee === ''),
