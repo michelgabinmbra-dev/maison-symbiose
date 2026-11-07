@@ -288,7 +288,9 @@ function trouverMateriel(materiel) {
 function alerterRoles(roles, sujet, message) {
   const destinataires = lireLignes(NOMS_FEUILLES.UTILISATEURS)
     .filter((u) => roles.indexOf(u.Role) !== -1 && u.Actif !== false && u.Email)
-    .map((u) => u.Email);
+    // Colonne MailCopie : autres adresses de la personne qui reçoivent aussi ses alertes (ex. DGA, 07/11).
+    .reduce((t, u) => t.concat([u.Email], String(u.MailCopie || '').split(/[,;\s]+/).filter((x) => /@/.test(x))), [])
+    .filter((x, i, t) => t.indexOf(x) === i);
   if (destinataires.length === 0) {
     Logger.log('Aucun destinataire pour les rôles ' + roles.join(', ') + ' : alerte non envoyée - ' + sujet);
     return;
