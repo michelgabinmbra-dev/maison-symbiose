@@ -66,13 +66,11 @@ function programmerIntervention(numeroAffaire, p) {
     majCellule(feuille, r, 'Statut', STATUTS_AFFAIRE.PROGRAMMEE);
   }
   majCellule(feuille, r, 'DateMaj', new Date());
-  const texteQuand = Utilities.formatDate(quand, 'Africa/Abidjan', 'dd/MM/yyyy') + (p.heure ? ' à ' + p.heure : '');
+  const texteQuand = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'][quand.getUTCDay()] + ' ' + Utilities.formatDate(quand, 'Africa/Abidjan', 'dd/MM/yyyy') + (p.heure ? ' à ' + p.heure : '');
   noterJournal(numeroAffaire, TYPES_JOURNAL.PROGRAMMATION, texteQuand + ' · ' + techs.map((t) => t.Nom).join(', '), u.nom);
-  const lieu = affaire.Client + (affaire.Site ? ' · ' + affaire.Site : '');
-  MailApp.sendEmail(techs.map((t) => t.Email).join(','), '[Maison Symbiose] Intervention le ' + texteQuand + ' : ' + lieu,
-    'Tu es programmé(e) pour l\'affaire ' + numeroAffaire + ' (' + (affaire.Titre || affaire.TypeIntervention) + ').\n\n'
-    + 'Lieu : ' + lieu + '\nQuand : ' + texteQuand + '\nÉquipe : ' + techs.map((t) => t.Nom).join(', ')
-    + '\n\nAprès l\'intervention, fais ton rapport dans l\'application.');
+  const site = affaire.Site || deviner_site(affaire.Titre + '\n' + affaire.Description);
+  const lieu = affaire.Client + (site ? ' · ' + site : '');
+  envoyerOrdreDeMission(techs, affaire, { site, lieu, texteQuand, par: u.nom });
   alerterRoles([ROLES.DGA], 'Intervention programmée : ' + lieu,
     u.nom + ' a programmé l\'affaire ' + numeroAffaire + ' le ' + texteQuand + ' avec ' + techs.map((t) => t.Nom).join(', ')
     + '.\n\nTu peux prévenir le client depuis la fiche (Écrire au client > Intervention programmée).');
@@ -193,4 +191,47 @@ function verifierDelais() {
     props.setProperty('RELANCES', JSON.stringify(Object.assign(deja, nouveaux)));
   }
   return Object.keys(nouveaux);
+}
+
+/**
+ * Mail « ordre de mission » aux techniciens programmés : où, quand, quoi (résumé du mail du
+ * client), avec qui, la priorité, ce qui reste à faire sur ce site et le lien vers l'appli.
+ */
+function envoyerOrdreDeMission(techs, affaire, x) {
+  const e = echapperHtml;
+  const titre = titrePropre(affaire.Titre) || affaire.TypeIntervention;
+  const resume = resumerDemande(affaire.Description);
+  let aFaire = [];
+  try { aFaire = historiqueSite(affaire.Client, x.site).aFaire; } catch (err) { aFaire = []; }
+  const type = affaire.TypeIntervention === TYPES_INTERVENTION.CURATIF ? 'Dépannage (maintenance curative)'
+    : affaire.TypeIntervention === TYPES_INTERVENTION.PREVENTIF ? 'Maintenance préventive' : affaire.TypeIntervention;
+  const tel = (/T[ée]l[^:\n]*:\s*([0-9 ./+-]{8,})/i.exec(String(affaire.Description || '')) || [])[1];
+  const appel = journalDeLAffaire(affaire.NumeroAffaire).filter((j) => j.type === TYPES_JOURNAL.APPEL)[0];
+  const contact = [appel ? String(appel.detail).split(' · ').slice(1).join(' · ') : '', tel ? 'tél. ' + tel.replace(/\s+/g, ' ').trim() : ''].filter(Boolean).join(' · ');
+  const ligne = (k, v) => (v ? '<tr><td style="padding:6px 12px 6px 0;color:#5A6585;white-space:nowrap;vertical-align:top">' + k + '</td><td style="padding:6px 0;font-weight:600;color:#0F1733">' + v + '</td></tr>' : '');
+  const html = '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#0F1733;max-width:560px">'
+    + '<div style="background:#0B1442;color:#fff;border-radius:14px 14px 0 0;padding:16px 18px"><div style="font-size:12px;letter-spacing:.08em;color:#C7D2FE">ORDRE DE MISSION · ' + e(affaire.NumeroAffaire) + '</div>'
+    + '<div style="font-size:20px;font-weight:bold;margin-top:4px">' + e(x.texteQuand) + '</div><div style="font-size:16px;margin-top:2px">' + e(x.lieu) + '</div></div>'
+    + '<div style="border:1px solid #E3E7F2;border-top:0;border-radius:0 0 14px 14px;padding:16px 18px">'
+    + (affaire.Priorite === PRIORITES.ELEVEE ? '<div style="background:#FEE2E2;color:#B91C1C;font-weight:bold;border-radius:8px;padding:6px 10px;display:inline-block;margin-bottom:10px">URGENT</div>' : '')
+    + '<table style="border-collapse:collapse">'
+    + ligne('Client', e(affaire.Client)) + ligne('Site', x.site ? e(x.site) : '<span style="color:#B45309">à confirmer avec ' + e(x.par) + '</span>')
+    + ligne('Intervention', e(type)) + ligne('Objet', e(titre)) + ligne('Équipe', e(techs.map((t) => t.Nom).join(', ')))
+    + ligne('Contact client', e(contact)) + ligne('Programmé par', e(x.par)) + '</table>'
+    + (resume ? '<div style="margin-top:12px;font-size:12px;letter-spacing:.06em;color:#0E5C8C;font-weight:bold">CE QUE LE CLIENT SIGNALE</div><div style="background:#F3F5FB;border-radius:10px;padding:10px 12px;margin-top:4px;white-space:pre-line">' + e(resume) + '</div>' : '')
+    + (aFaire.length ? '<div style="margin-top:12px;font-size:12px;letter-spacing:.06em;color:#B45309;font-weight:bold">À FAIRE SUR CE SITE (DERNIERS PASSAGES)</div><ul style="margin:4px 0 0;padding-left:18px">' + aFaire.map((p) => '<li>' + e(p.section) + ' : ' + e(p.texte) + '</li>').join('') + '</ul>' : '')
+    + '<p style="margin:16px 0 0">Ouvre l\'application, <b>Mes missions</b>, pour voir la fiche complète. Après l\'intervention, fais ton rapport dans l\'appli.</p>'
+    + '<p style="margin:14px 0 0"><a href="https://symbioz-ci.github.io" style="background:#3B82F6;color:#fff;text-decoration:none;font-weight:bold;border-radius:10px;padding:10px 16px;display:inline-block">Ouvrir Maison Symbiose</a></p>'
+    + '</div></div>';
+  const texte = 'ORDRE DE MISSION ' + affaire.NumeroAffaire + '\n\nQuand : ' + x.texteQuand + '\nClient : ' + affaire.Client
+    + '\nSite : ' + (x.site || 'à confirmer avec ' + x.par) + '\nIntervention : ' + type + (affaire.Priorite === PRIORITES.ELEVEE ? ' (URGENT)' : '')
+    + '\nObjet : ' + titre + '\nÉquipe : ' + techs.map((t) => t.Nom).join(', ') + (contact ? '\nContact client : ' + contact : '') + '\nProgrammé par : ' + x.par
+    + (resume ? '\n\nCe que le client signale :\n' + resume : '')
+    + (aFaire.length ? '\n\nÀ faire sur ce site :\n' + aFaire.map((p) => '- ' + p.section + ' : ' + p.texte).join('\n') : '')
+    + '\n\nOuvre l\'application (https://symbioz-ci.github.io), Mes missions. Après l\'intervention, fais ton rapport dans l\'appli.';
+  MailApp.sendEmail({
+    to: techs.map((t) => t.Email).join(','), name: 'Maison Symbiose',
+    subject: (affaire.Priorite === PRIORITES.ELEVEE ? 'URGENT · ' : '') + 'Mission le ' + x.texteQuand + ' · ' + x.lieu + ' · ' + titre,
+    body: texte, htmlBody: html,
+  });
 }

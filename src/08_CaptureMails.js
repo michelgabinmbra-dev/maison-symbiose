@@ -49,14 +49,16 @@ function creerDemandeDepuisMail(thread) {
   const expediteur = message.getFrom();
   const clientEstime = estimerClientDepuisExpediteur(expediteur);
 
+  const corps = message.getPlainBody();
   const numero = creerDemande({
     client: clientEstime,
-    site: '',
+    // Site deviné dans le mail (« agence de Jacqueville ») ; à corriger dans la fiche si besoin.
+    site: deviner_site(thread.getFirstMessageSubject() + '\n' + corps),
     typeIntervention: TYPES_INTERVENTION.CURATIF,
     source: SOURCES_DEMANDE.MAIL,
     priorite: '', // à fixer par le DG/DGA
     titre: thread.getFirstMessageSubject(),
-    description: message.getPlainBody().slice(0, 1500),
+    description: corps.slice(0, 1500),
   });
 
   Logger.log('Affaire ' + numero + " créée depuis le mail : " + thread.getFirstMessageSubject());
@@ -87,4 +89,29 @@ function corrigerClientAffaire(numeroAffaire, client, site) {
   if (site) {
     majCellule(feuille, resultat, 'Site', site);
   }
+}
+
+/** « agence de Jacqueville », « l'agence d'Adjamé Forum », « agence Adjamé Forum » → le nom du site, sinon ''. */
+function deviner_site(texte) {
+  const m = /agence\s+(?:de\s+|d['’]\s*|du\s+)?([A-ZÀ-Ý][A-Za-zÀ-ÿ'’-]+(?:\s+[A-ZÀ-Ý][A-Za-zÀ-ÿ'’-]+){0,2})/.exec(String(texte || ''));
+  return m && !/^(Bank|AFG|SYMBIOZ)$/i.test(m[1]) ? m[1].trim() : '';
+}
+
+/**
+ * Le cœur d'un mail client, sans signatures, en-têtes de transfert ni liens : ce que le
+ * technicien doit lire. Limité à 600 caractères.
+ */
+function resumerDemande(texte) {
+  const bruit = /^(De ?:|Envoy[ée] ?:|À ?:|A ?:|Cc ?:|Objet ?:|Email ?:|T[ée]l\.? ?:|IP\/|www\.|Direction |D[ée]partement |Service |Envoy[ée] à partir de|Get Outlook|_{3,}|Cordialement|Bonjour|Merci de programmer)/i;
+  const vues = {};
+  return String(texte || '').replace(/\[cid:[^\]]*\]/g, '').replace(/<(mailto|https?):[^>]*>/g, '').replace(/\r/g, '')
+    .split('\n').map((l) => l.trim())
+    .filter((l) => l && !bruit.test(l) && !/^[A-ZÀ-Ý' -]{3,}$/.test(l) && !/^[A-ZÀ-Ý][a-zà-ÿ]+ [A-ZÀ-Ý' -]{3,}$/.test(l))
+    .filter((l) => { const k = l.toLowerCase(); if (vues[k]) return false; vues[k] = true; return true; })
+    .join('\n').slice(0, 600);
+}
+
+/** Titre sans « TR: », « RE: ». */
+function titrePropre(t) {
+  return String(t || '').replace(/^((TR|RE|FW|FWD)\s*:\s*)+/i, '').trim();
 }
