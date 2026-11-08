@@ -120,15 +120,21 @@ function ecranAccueil() {
   const facturesEnRetard = lireLignes(NOMS_FEUILLES.FACTURES)
     .filter((f) => f.StatutPaiement !== STATUTS_PAIEMENT.PAYEE && situationFacture(f).joursDeRetard > 0);
 
+  const rapports = lireLignes(NOMS_FEUILLES.RAPPORTS);
+  const voitPlanning = [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) !== -1 || aLeDroit(utilisateur, DROITS.PLANNING);
+  const programmees = voitPlanning ? interventionsProgrammees() : [];
+  const dejaProgrammees = programmees.map((m) => m.numero);
   return {
     utilisateur,
+    programmees,
     compteurs: {
       aTraiter: ouvertes.filter((a) => a.Statut === STATUTS_AFFAIRE.NOUVELLE_DEMANDE).length,
       urgences: ouvertes.filter((a) => a.Priorite === PRIORITES.ELEVEE).length,
       facturesEnRetard: facturesEnRetard.length,
       enExecution: ouvertes.filter((a) => a.Statut === STATUTS_AFFAIRE.EN_EXECUTION).length,
     },
-    urgences: listerUrgences().slice(0, 30).map(resumerAffaire),
+    // Les interventions déjà programmées sont montrées à part (« Interventions programmées »).
+    urgences: listerUrgences().filter((a) => dejaProgrammees.indexOf(a.NumeroAffaire) === -1).slice(0, 30).map((a) => resumerAffaire(a, rapports)),
     enLigne: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) !== -1 ? resumePresence().enLigne : null,
     rapportsARelire: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) !== -1 ? rapportsARelire() : [],
     // Missions de la personne (pas pour le DG et le DGA, qui voient tout ailleurs).
@@ -138,17 +144,18 @@ function ecranAccueil() {
 
 function listeAffaires(tout) {
   exigerRole(Object.values(ROLES));
+  const rapports = lireLignes(NOMS_FEUILLES.RAPPORTS);
   return lireLignes(NOMS_FEUILLES.AFFAIRES)
     .filter((a) => tout || STATUTS_CLOS.indexOf(a.Statut) === -1)
     .sort((a, b) => b.DateCreation - a.DateCreation)
-    .map(resumerAffaire);
+    .map((a) => resumerAffaire(a, rapports));
 }
 
-function resumerAffaire(a) {
+function resumerAffaire(a, rapports) {
   return {
     numero: a.NumeroAffaire, client: a.Client, site: a.Site, type: a.TypeIntervention,
     source: a.Source, priorite: a.Priorite, statut: a.Statut, titre: a.Titre || a.TypeIntervention,
-    date: a.DateCreation, avancement: Number(a.Avancement) || 0, agent: a.Agent,
+    date: a.DateCreation, avancement: avancementAffaire(a, rapports || []), agent: a.Agent,
   };
 }
 
@@ -156,6 +163,7 @@ function ecranAffaire(numero) {
   const utilisateur = exigerRole(Object.values(ROLES));
   const resultat = trouverAffaire(numero);
   const affaire = ligneVersObjet(resultat.entetes, resultat.ligne);
+  affaire.Avancement = avancementAffaire(affaire, lireLignes(NOMS_FEUILLES.RAPPORTS));
   const tousDevis = lireLignes(NOMS_FEUILLES.DEVIS).filter((d) => d.NumeroAffaire === numero);
   const devis = tousDevis[tousDevis.length - 1] || null;
   const voitFinances = [ROLES.DG, ROLES.DGA, ROLES.COMPTABILITE].indexOf(utilisateur.role) !== -1;

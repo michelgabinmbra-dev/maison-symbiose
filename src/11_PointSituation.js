@@ -13,12 +13,13 @@ function pointDeSituation(client) {
   }
   const affaires = lireLignes(NOMS_FEUILLES.AFFAIRES)
     .filter((a) => a.Client === client && a.Statut !== STATUTS_AFFAIRE.ABANDONNEE);
+  const rapports = lireLignes(NOMS_FEUILLES.RAPPORTS);
 
   const resume = (a) => ({
     numero: a.NumeroAffaire,
     titre: a.Titre || a.TypeIntervention,
     site: a.Site || '',
-    avancement: Number(a.Avancement) || 0,
+    avancement: avancementAffaire(a, rapports),
     statut: a.Statut,
     blocage: a.Blocage || '',
     prochaineAction: a.ProchaineAction || '',

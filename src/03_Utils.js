@@ -41,4 +41,15 @@ function majCellule(feuille, resultatLigne, nomColonne, valeur) {
     throw new Error("Colonne introuvable : " + nomColonne);
   }
   feuille.getRange(resultatLigne.index, colonne + 1).setValue(valeur);
+  if (resultatLigne.ligne) resultatLigne.ligne[colonne] = valeur;
+  // Affaires : l'avancement suit le statut tout seul (il ne recule jamais).
+  if (nomColonne === 'Statut' && resultatLigne.entetes.indexOf('Avancement') !== -1 && typeof palierAvancement === 'function') {
+    const colAv = resultatLigne.entetes.indexOf('Avancement');
+    const actuel = Number(resultatLigne.ligne ? resultatLigne.ligne[colAv] : 0) || 0;
+    const palier = palierAvancement(valeur);
+    if (palier > actuel) {
+      feuille.getRange(resultatLigne.index, colAv + 1).setValue(palier);
+      if (resultatLigne.ligne) resultatLigne.ligne[colAv] = palier;
+    }
+  }
 }

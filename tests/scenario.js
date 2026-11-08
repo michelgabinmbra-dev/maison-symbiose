@@ -193,3 +193,9 @@ api(jm, 'noterAppel', { numero: n6, appel: { contact: 'M. MARTIN (chef d\'agence
 const om = H.MAILS.slice(nmm).filter((m) => /Mission/.test(m.subject))[0];
 console.log('--- ordre de mission ---\n' + om.subject + '\n' + om.body);
 require('fs').writeFileSync('/tmp/claude-0/-home-claude/820ef08b-0bd9-556c-b880-810e611f1f7f/scratchpad/mat/om.html', om.htmlBody);
+// Avancement automatique et interventions programmées sur l'accueil du DG
+const n7 = api(J, 'creerDemande', { client: 'AFG', site: 'Agence Plateau', titre: 'Groupe HS', typeIntervention: 'Curatif', source: 'Appel', priorite: 'Moyenne' });
+api(jm, 'programmer', { numero: n7, programmation: { date: '2026-11-12', heure: '10:00', techniciens: ['koffi@symbiozci.com'] } });
+etape('avancement auto après programmation = 20', () => { const v = api(J, 'ecranAffaire', { numero: n7 }).affaire.Avancement; if (v !== 20) throw new Error('avancement ' + v); return v; });
+etape('accueil DG : interventions programmées', () => { const d = api(J, 'ecranAccueil', {}); const p = d.programmees.filter((m) => m.numero === n7)[0]; if (!p || p.equipe !== 'KOFFI') throw new Error('absente'); if (d.urgences.some((u) => u.numero === n7)) throw new Error('aussi dans urgences'); return p.date + ' ' + p.heure; });
+etape('accueil technicien sans le planning global', () => { const d = api(sk, 'ecranAccueil', {}); if (d.programmees.length) throw new Error('vu par Koffi'); return 0; });

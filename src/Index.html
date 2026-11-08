@@ -136,6 +136,7 @@ const ICONES = {
   outil: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
   maison: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
   liste: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  calendrier: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   auto: '<path d="M3 16V11l2-5h14l2 5v5"/><path d="M3 16h18"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
   courbe: '<path d="M4 19V5M4 19h16M8 15l4-4 3 3 5-6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
@@ -246,7 +247,7 @@ function iconeType(a) {
 }
 function carteAffaire(a) {
   return '<button class="item' + (a.priorite ? '' : ' pointille') + '" onclick="aller(\'affaire\',{numero:\'' + esc(a.numero) + '\'})">' + iconeType(a)
-    + '<span class="txt"><b>' + esc(a.titre) + '</b><small>' + esc(a.client) + (a.site ? ' · ' + esc(a.site) : '') + ' · ' + esc(depuis(a.date)) + ' · ' + esc(a.source) + '</small></span>'
+    + '<span class="txt"><b>' + esc(a.titre) + '</b><small>' + esc(a.client) + (a.site ? ' · ' + esc(a.site) : '') + ' · ' + esc(depuis(a.date)) + ' · ' + esc(a.source) + (a.avancement ? ' · <b>' + a.avancement + ' %</b>' : '') + '</small></span>'
     + pastillePriorite(a.priorite) + '</button>';
 }
 
@@ -307,6 +308,7 @@ ECRANS.accueil = function () {
       + (aDesReglages() ? '<button class="item" onclick="aller(\'reglages\')"><span class="ico violet">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Réglages</b><small>' + (estChef() ? 'Équipe et codes, clients, sites, véhicules, stock' : [aLePlanning() ? 'sites' : '', MOI.role === 'VEHICULES' ? 'véhicules' : '', MOI.role === 'STOCK' ? 'matériel, seuils, outils' : ''].filter(Boolean).join(', ').replace(/^./, (c) => c.toUpperCase())) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>' : '')
       + (d.mesMissions && d.mesMissions.length ? '<div class="ligne"><h2>Mes missions · ' + d.mesMissions.length + '</h2><a href="#" onclick="aller(\'missions\');return false">Tout voir</a></div>' + d.mesMissions.slice(0, 4).map(carteMission).join('') : '')
       + (MOI.role !== 'DG' && MOI.role !== 'DGA' && !(d.mesMissions || []).length ? '<button class="item" onclick="aller(\'missions\')"><span class="ico vert">' + svg('liste', 22, '#fff') + '</span><span class="txt"><b>Mes missions</b><small>Planning de la semaine, urgences, historique des sites</small></span>' + svg('droite', 20, '#5A6585') + '</button>' : '')
+      + ((d.programmees || []).length ? '<div class="ligne"><h2>Interventions programmées · ' + d.programmees.length + '</h2></div>' + d.programmees.map(carteProgrammee).join('') : '')
       + '<div class="ligne"><h2>Urgences, tous clients</h2><a href="#" onclick="racine(\'affaires\');return false">Tout voir</a></div>'
       + (d.rapportsARelire && d.rapportsARelire.length ? '<h2>Rapports à relire · ' + d.rapportsARelire.length + '</h2>' + d.rapportsARelire.map((r) => '<button class="item" onclick="aller(\'affaire\',{numero:\'' + esc(r.affaire) + '\'})"><span class="ico jaune">' + svg('liste', 22, '#fff') + '</span><span class="txt"><b>' + esc(r.numero) + ' · ' + esc(r.client) + '</b><small>' + esc(r.technicien) + ' · ' + esc(r.titre) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>').join('') : '')
       + (d.urgences.length ? d.urgences.map(carteAffaire).join('') : '<div class="vide">Aucune affaire en cours.</div>')
@@ -324,6 +326,13 @@ function carteMission(m) {
   return '<button class="item" onclick="' + cible + '"><span class="ico ' + (m.urgence ? 'rouge' : (m.preventif ? 'bleu' : 'jaune')) + '">' + svg(m.preventif ? 'bouclier' : 'outil', 22, '#fff') + '</span>'
     + '<span class="txt"><b>' + esc(m.client) + (m.site ? ' · ' + esc(m.site) : '') + '</b><small>' + (m.urgence ? '<b style="color:#B91C1C">URGENCE</b> · ' : '') + jourMission(m) + ' · ' + esc(m.titre)
     + (m.aFaire ? ' · <b style="color:#B45309">' + m.aFaire + ' à faire</b>' : '') + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>';
+}
+/** Intervention programmée (vue DG, DGA, planning) : jour, heure, lieu et équipe. */
+function carteProgrammee(m) {
+  const passee = m.date && new Date(m.date) < new Date(new Date().toDateString());
+  return '<button class="item" onclick="aller(\'affaire\',{numero:\'' + esc(m.numero) + '\'})"><span class="ico ' + (m.urgence ? 'rouge' : 'vert') + '">' + svg('calendrier', 22, '#fff') + '</span>'
+    + '<span class="txt"><b>' + esc(m.client) + (m.site ? ' · ' + esc(m.site) : '') + '</b><small>' + (passee ? '<b style="color:#B91C1C">Rapport attendu</b> · ' : '') + '<b style="color:#047857">' + jourMission(m) + '</b> · ' + esc(m.titre)
+    + '<br>Équipe : ' + esc(m.equipe) + '</small></span>' + svg('droite', 20, '#5A6585') + '</button>';
 }
 ECRANS.missions = function () {
   appel('ecranMissions').then((d) => {

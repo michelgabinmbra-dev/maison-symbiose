@@ -45,10 +45,7 @@ function creerRapport(numeroAffaire, details) {
     majCellule(feuille, ligneRapport, 'SignataireClient', String(details.signataire || '').trim());
   }
 
-  const affaire = trouverAffaire(numeroAffaire);
-  if (!(Number(affaire.ligne[affaire.entetes.indexOf('Avancement')]) > 0)) {
-    mettreAJourSuivi(numeroAffaire, { avancement: 20 });
-  }
+  releverAvancement(numeroAffaire, AVANCEMENT_RAPPORT_FAIT);
   signalerRapportARelire(numero, numeroAffaire, utilisateur.nom);
   return numero;
 }
@@ -175,5 +172,6 @@ function envoyerRapport(numeroRapport) {
   majCellule(feuille, ligne, 'Statut', STATUTS_RAPPORT.ENVOYE);
   majCellule(feuille, ligne, 'EnvoyeLe', new Date());
   noterJournal(r.NumeroAffaire, TYPES_JOURNAL.ENVOI, 'Rapport ' + numeroRapport + ' envoyé à ' + a, utilisateur.nom);
+  releverAvancement(r.NumeroAffaire, AVANCEMENT_RAPPORT_ENVOYE);
   return a;
 }

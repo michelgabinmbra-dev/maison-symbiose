@@ -26,29 +26,48 @@ function cleSite(client, site) {
 function missionsDe(utilisateur) {
   const nom = String(utilisateur.nom || '').trim().toLowerCase();
   const groupes = groupesDe(utilisateur).map((g) => g.NomGroupe);
-  const rapports = lireLignes(NOMS_FEUILLES.RAPPORTS);
-  // Dernière programmation de chaque affaire : un rapport fait après elle clôt la mission.
-  const programmees = {};
-  if (getClasseurDonnees().getSheetByName(NOMS_FEUILLES.JOURNAL)) {
-    lireLignes(NOMS_FEUILLES.JOURNAL).filter((j) => j.Type === TYPES_JOURNAL.PROGRAMMATION)
-      .forEach((j) => { programmees[j.NumeroAffaire] = Math.max(programmees[j.NumeroAffaire] || 0, (dateOuNull(j.Date) || 0).valueOf()); });
-  }
-  const faite = (a) => rapports.some((r) => r.NumeroAffaire === a.NumeroAffaire && (dateOuNull(r.Date) || 0).valueOf() >= (programmees[a.NumeroAffaire] || 0));
+  const faite = testMissionFaite();
   return lireLignes(NOMS_FEUILLES.AFFAIRES)
     .filter((a) => a.NumeroAffaire && STATUTS_CLOS.indexOf(a.Statut) === -1)
     .filter((a) => (nom && nomsAgents(a).indexOf(nom) !== -1)
       || (a.TypeIntervention === TYPES_INTERVENTION.PREVENTIF && groupes.indexOf(a.Groupe) !== -1))
     .filter((a) => !faite(a))
-    .map((a) => {
-      const d = dateOuNull(a.DelaiPrevu);
-      return {
-        numero: a.NumeroAffaire, client: a.Client, site: a.Site || '', titre: String(a.Titre || a.TypeIntervention).replace(/^((TR|RE)\s*:\s*)+/i, ''),
-        type: a.TypeIntervention, priorite: a.Priorite || '', urgence: a.Priorite === PRIORITES.ELEVEE,
-        preventif: a.TypeIntervention === TYPES_INTERVENTION.PREVENTIF, groupe: a.Groupe || '', statut: a.Statut,
-        date: d ? d.toISOString() : '', heure: String(a.HeureIntervention || '').replace(/^'/, ''), equipe: a.Agent || '',
-      };
-    })
+    .map(versMission)
     .sort((x, y) => (y.urgence - x.urgence) || ((x.date ? Date.parse(x.date) : 8.64e15) - (y.date ? Date.parse(y.date) : 8.64e15)));
+}
+
+/** Renvoie une fonction : vrai si un rapport a été fait après la dernière programmation de l'affaire. */
+function testMissionFaite() {
+  const rapports = lireLignes(NOMS_FEUILLES.RAPPORTS);
+  const programmees = {};
+  if (getClasseurDonnees().getSheetByName(NOMS_FEUILLES.JOURNAL)) {
+    lireLignes(NOMS_FEUILLES.JOURNAL).filter((j) => j.Type === TYPES_JOURNAL.PROGRAMMATION)
+      .forEach((j) => { programmees[j.NumeroAffaire] = Math.max(programmees[j.NumeroAffaire] || 0, (dateOuNull(j.Date) || 0).valueOf()); });
+  }
+  return (a) => rapports.some((r) => r.NumeroAffaire === a.NumeroAffaire && (dateOuNull(r.Date) || 0).valueOf() >= (programmees[a.NumeroAffaire] || 0));
+}
+
+function versMission(a) {
+  const d = dateOuNull(a.DelaiPrevu);
+  return {
+    numero: a.NumeroAffaire, client: a.Client, site: a.Site || deviner_site(a.Titre + '\n' + a.Description) || '', titre: String(a.Titre || a.TypeIntervention).replace(/^((TR|RE)\s*:\s*)+/i, ''),
+    type: a.TypeIntervention, priorite: a.Priorite || '', urgence: a.Priorite === PRIORITES.ELEVEE,
+    preventif: a.TypeIntervention === TYPES_INTERVENTION.PREVENTIF, groupe: a.Groupe || '', statut: a.Statut,
+    date: d ? d.toISOString() : '', heure: String(a.HeureIntervention || '').replace(/^'/, ''), equipe: a.Agent || '',
+  };
+}
+
+/**
+ * Toutes les interventions programmées et pas encore faites (vue DG, DGA, planning) :
+ * affaires ouvertes avec un jour et une équipe, sans rapport depuis la dernière programmation.
+ */
+function interventionsProgrammees() {
+  const faite = testMissionFaite();
+  return lireLignes(NOMS_FEUILLES.AFFAIRES)
+    .filter((a) => a.NumeroAffaire && STATUTS_CLOS.indexOf(a.Statut) === -1 && dateOuNull(a.DelaiPrevu) && String(a.Agent || '').trim())
+    .filter((a) => !faite(a))
+    .map(versMission)
+    .sort((x, y) => Date.parse(x.date) - Date.parse(y.date));
 }
 
 /** Écran « Mes missions » de la personne connectée, avec le nombre de points à faire par site. */

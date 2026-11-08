@@ -20,6 +20,45 @@ const STATUTS_AFFAIRE = {
   CLOTUREE: 'Clôturée (contrat)',
 };
 
+/** Avancement atteint automatiquement à chaque étape (en %). Il ne recule jamais. */
+const AVANCEMENT_PAR_STATUT = {
+  'Confirmée par le client': 10,
+  'Programmée': 20,
+  'Devis à revoir': 50,
+  'Devis validé': 60,
+  'En exécution': 70,
+  'Facture émise': 85,
+  'Réception confirmée': 90,
+  'Payée': 100,
+  'Clôturée (contrat)': 100,
+};
+const AVANCEMENT_RAPPORT_FAIT = 50;
+const AVANCEMENT_RAPPORT_ENVOYE = 70;
+
+function palierAvancement(statut) {
+  return AVANCEMENT_PAR_STATUT[statut] || 0;
+}
+
+/** Avancement affiché : le plus haut entre la saisie à la main, l'étape et les rapports. */
+function avancementAffaire(a, rapports) {
+  let v = Math.max(Number(a.Avancement) || 0, palierAvancement(a.Statut));
+  (rapports || []).filter((r) => r.NumeroAffaire === a.NumeroAffaire).forEach((r) => {
+    v = Math.max(v, r.Statut === 'Envoyé' ? AVANCEMENT_RAPPORT_ENVOYE : AVANCEMENT_RAPPORT_FAIT);
+  });
+  return Math.min(100, v);
+}
+
+/** Monte l'avancement d'une affaire à au moins « valeur » (jamais vers le bas). */
+function releverAvancement(numeroAffaire, valeur) {
+  const r = trouverAffaire(numeroAffaire);
+  const col = r.entetes.indexOf('Avancement');
+  if ((Number(r.ligne[col]) || 0) < valeur) {
+    const feuille = getFeuilleDonnees(NOMS_FEUILLES.AFFAIRES);
+    majCellule(feuille, r, 'Avancement', valeur);
+    majCellule(feuille, r, 'DateMaj', new Date());
+  }
+}
+
 /** Client sous contrat de maintenance (colonne TypeContrat contenant « maintenance ») : curatif et préventif ne se facturent pas. */
 function clientSousContrat(nomClient) {
   const c = lireLignes(NOMS_FEUILLES.CLIENTS).filter((x) => x.NomClient === nomClient)[0];
