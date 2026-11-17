@@ -192,7 +192,7 @@ const nmm = H.MAILS.length;
 api(jm, 'noterAppel', { numero: n6, appel: { contact: 'M. MARTIN (chef d\'agence)', resultat: 'Confirmée', note: 'ok mardi' } }); api(jm, 'programmer', { numero: n6, programmation: { date: '2026-11-10', heure: '08:00', techniciens: ['koffi@symbiozci.com'] } });
 const om = H.MAILS.slice(nmm).filter((m) => /Mission/.test(m.subject))[0];
 console.log('--- ordre de mission ---\n' + om.subject + '\n' + om.body);
-require('fs').writeFileSync('/tmp/claude-0/-home-claude/820ef08b-0bd9-556c-b880-810e611f1f7f/scratchpad/mat/om.html', om.htmlBody);
+require('fs').writeFileSync(require('os').tmpdir() + '/om.html', om.htmlBody);
 // Avancement automatique et interventions programmées sur l'accueil du DG
 const n7 = api(J, 'creerDemande', { client: 'AFG', site: 'Agence Plateau', titre: 'Groupe HS', typeIntervention: 'Curatif', source: 'Appel', priorite: 'Moyenne' });
 api(jm, 'programmer', { numero: n7, programmation: { date: '2026-11-12', heure: '10:00', techniciens: ['koffi@symbiozci.com'] } });

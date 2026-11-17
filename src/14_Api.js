@@ -25,6 +25,7 @@ const ACTIONS_API = {
   // Affaires
   creerDemande: (a) => creerDemande(a),
   definirPriorite: (a) => definirPrioriteAffaire(a.numero, a.priorite),
+  ignorerMail: (a) => ignorerMailAffaire(a.numero),
   definirType: (a) => definirTypeAffaire(a.numero, a.type),
   cloturerContrat: (a) => cloturerAffaireContrat(a.numero),
   envoyerMessage: (a) => envoyerMessageClient(a.numero, a.message),
@@ -40,9 +41,12 @@ const ACTIONS_API = {
   enregistrerDepense: (a) => enregistrerDepense(a.numero, a.categorie, a.montant, a.description),
   // Proforma
   creerDevis: (a) => creerDevis(a.numero, 0, a.marge, a.commission, a.impot),
-  ajouterLigneDevis: (a) => ajouterLigneDevis(a.devis, a.designation, a.quantite, a.cout),
+  ajouterLigneDevis: (a) => ajouterLigneDevis(a.devis, a.designation, a.quantite, a.cout, a.prix),
   modifierPrixLigne: (a) => modifierPrixLigne(a.devis, a.ligne, a.prix),
-  changerTauxDevis: (a) => changerTauxDevis(a.devis, a.marge, a.commission, a.impot, a.reinitialiser),
+  modifierLigneDevis: (a) => modifierLigneDevis(a.devis, a.ligne, a.champs),
+  supprimerLigneDevis: (a) => supprimerLigneDevis(a.devis, a.ligne),
+  fixerPrixTotalDevis: (a) => fixerPrixTotalDevis(a.devis, a.total),
+  changerTauxDevis: (a) => changerTauxDevis(a.devis, a.marge, a.commission, a.impot),
   validerDevis: (a) => validerDevis(a.devis),
   pdfProforma: (a) => pdfProforma(a.devis),
   envoyerProforma: (a) => envoyerProforma(a.devis),
@@ -197,6 +201,7 @@ function ecranAffaire(numero) {
     modelesMessage: MODELES_MESSAGE,
     sujetMessage: sujetParDefaut(affaire),
     historique: historiqueSite(affaire.Client, affaire.Site),
+    peutIgnorerMail: affaire.Source === SOURCES_DEMANDE.MAIL && affaire.Statut === STATUTS_AFFAIRE.NOUVELLE_DEMANDE && peutPlanifierAffaire(utilisateur),
     peutCloturer: utilisateur.role === ROLES.DG || utilisateur.role === ROLES.DGA || aLeDroit(utilisateur, DROITS.PLANNING),
   };
 }

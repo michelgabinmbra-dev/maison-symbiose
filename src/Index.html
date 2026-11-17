@@ -92,6 +92,14 @@ input[type=checkbox]{min-height:0;width:20px;height:20px;padding:0;flex:none;acc
 .lp{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .lp input{width:124px;text-align:right;font-weight:700;flex:none}
 .lp input.main{border:2px solid #EA580C;background:#FFF7ED}
+.ligdev{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid #E5E9F2}
+.prixfinal{display:flex;align-items:center;gap:8px;margin:6px 0 2px}
+.prixfinal input{flex:1;min-width:0;font-size:34px;font-weight:800;color:#fff;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.45);border-radius:14px;padding:6px 12px}
+.prixfinal span{font-size:30px;font-weight:800;color:#fff}
+.trois{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mini{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#5A6585;font-weight:600}
+.mini input{width:100%;text-align:right;font-weight:700;min-width:0}
+.lien-suppr{background:none;border:0;color:#B91C1C;font-weight:600;font-size:13px;min-height:44px;padding:0 4px}
 .stepper{display:flex;align-items:center;gap:6px}
 .stepper button{width:44px;height:44px;border-radius:12px;border:1px solid #C9D0E3;background:#fff;font-size:18px;color:var(--texte)}
 .stepper b{min-width:48px;text-align:center}
@@ -403,6 +411,7 @@ ECRANS.affaire = function (p) {
     const delai = a.DelaiPrevu ? new Date(a.DelaiPrevu).toISOString().slice(0, 10) : '';
     let html = entete(a.Titre || a.TypeIntervention, esc(a.NumeroAffaire) + ' · ' + esc(LIBELLES_TYPE[a.TypeIntervention] || a.TypeIntervention) + ' · ' + esc(a.Source) + '<br>' + esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : '') + (a.Agent ? ' · Agent : ' + esc(a.Agent) : ''))
       + '<div class="section">'
+      + (d.peutIgnorerMail ? '<div class="carte" style="background:#EEF2FF"><div style="font-size:14px"><b>Ce mail n\'est pas du travail ?</b> (code de connexion, publicité…) Écarte-le : il quitte l\'accueil et les prochains mails de cet expéditeur seront rangés tout seuls.</div><button class="bouton second" onclick="ignorerMail(this)">Pas du travail, écarter</button></div>' : '')
       + '<div class="carte"><div class="ligne"><b style="font-size:13px;color:#5A6585">OÙ EN EST LE DOSSIER</b>' + pastillePriorite(a.Priorite) + '</div>'
       + '<div class="etapes">' + etapes.map((e, i) => '<i class="' + (i <= rang ? 'on' : '') + '"></i>').join('') + '</div>'
       + '<div class="etiquettes">' + etapes.map((e, i) => '<span' + (i === rang ? ' style="color:#0F1733;font-weight:700"' : '') + '>' + e[1] + '</span>').join('') + '</div>'
@@ -553,6 +562,11 @@ function nettoyerMail(t) {
 }
 function cloturerContrat() { appel('cloturerContrat', { numero: numeroCourant() }).then(() => { toast('Dossier clôturé'); rafraichirAffaire(); }).catch(echec); }
 function definirType(t) { appel('definirType', { numero: numeroCourant(), type: t }).then(() => { toast('Type : ' + LIBELLES_TYPE[t]); rafraichirAffaire(); }).catch(echec); }
+function ignorerMail(b) {
+  if (!confirm('Écarter ce mail ? Il n\'est pas du travail et ne sera plus affiché.')) return;
+  b.disabled = true;
+  appel('ignorerMail', { numero: numeroCourant() }).then((r) => { toast('Mail écarté' + (r.adresse ? ' · les mails de ' + r.adresse + ' seront rangés tout seuls' : '') + (r.autres ? ' (' + r.autres + ' autre' + (r.autres > 1 ? 's' : '') + ' aussi)' : '')); racine('accueil'); }).catch((e) => { b.disabled = false; echec(e); });
+}
 function definirPriorite(p) { appel('definirPriorite', { numero: numeroCourant(), priorite: p }).then(() => { toast('Priorité : ' + p); rafraichirAffaire(); }).catch(echec); }
 function enregistrerSuivi(ev) {
   ev.preventDefault();
@@ -1038,24 +1052,26 @@ ECRANS.proforma = function (p) {
     const a = d.affaire, dv = d.devis;
     if (!dv) {
       rendre(entete('Proforma', esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : ''))
-        + '<div class="section"><div class="carte"><div style="font-size:14px">Pas encore de proforma pour cette affaire. Marge nette visée 30 %, commission 10 %, impôt 10 % (modifiables ensuite).</div>'
+        + '<div class="section"><div class="carte"><div style="font-size:14px">Pas encore de proforma pour cette affaire. Tu saisis toi-même tes quantités, coûts et prix ; commission 10 % et impôt 10 % (modifiables).</div>'
         + '<button class="bouton" onclick="creerProforma()">Créer la proforma</button></div></div>', null);
       return;
     }
     const lignes = d.lignes;
     const html = entete('Proforma ' + dv.NumeroDevis.replace('DEV', 'PRO'), esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : '') + ' · ' + esc(dv.Statut))
       + '<div class="section">'
-      + '<div class="carte"><b style="font-size:13px;color:#5A6585">LIGNES : COÛT → PRIX (modifiable)</b>'
-      + (lignes.length ? lignes.map((l) => '<div class="lp"><div class="txt"><b style="white-space:normal">' + esc(l.NumeroLigne) + '. ' + esc(l.Designation) + '</b><small>' + esc(l.Quantite) + ' × coût ' + fcfa(l.CoutUnitaire) + ' · ' + (l.PrixModifieMain === true ? 'modifié à la main' : 'calculé') + '</small></div>'
-        + '<input class="' + (l.PrixModifieMain === true ? 'main' : '') + '" inputmode="numeric" aria-label="Prix unitaire ligne ' + esc(l.NumeroLigne) + '" value="' + Math.round(l.PrixUnitaire) + '" onchange="modifierPrix(' + Number(l.NumeroLigne) + ',this.value)"></div>').join('') : '<div class="vide">Ajoute la première ligne.</div>')
+      + '<div class="carte"><b style="font-size:13px;color:#5A6585">LIGNES : TES MONTANTS (tout est modifiable)</b>'
+      + (lignes.length ? lignes.map((l) => carteLigneDevis(l, dv)).join('') : '<div class="vide">Ajoute la première ligne.</div>')
       + '<details' + (lignes.length ? '' : ' open') + '><summary style="font-weight:600;color:#2563EB;min-height:44px;display:flex;align-items:center">+ Ajouter une ligne</summary>'
       + '<form onsubmit="ajouterLigne(event)" style="display:flex;flex-direction:column;gap:10px"><input id="ld" placeholder="Désignation" aria-label="Désignation" required>'
-      + '<div class="deux"><input id="lq" type="number" inputmode="decimal" value="1" min="0" step="any" aria-label="Quantité" required><input id="lc" type="number" inputmode="numeric" placeholder="Coût unitaire" aria-label="Coût unitaire" required></div>'
+      + '<div class="trois"><label class="mini">Quantité<input id="lq" type="number" inputmode="decimal" value="1" min="0" step="any" required oninput="conseilNouvelle()"></label>'
+      + '<label class="mini">Coût unitaire<input id="lc" type="number" inputmode="numeric" min="0" required oninput="conseilNouvelle()"></label>'
+      + '<label class="mini">Prix unitaire<input id="lp" type="number" inputmode="numeric" min="0" required></label></div>'
+      + '<small id="lconseil" style="color:#5A6585"></small>'
       + '<button class="bouton" type="submit">Ajouter la ligne</button></form></details></div>'
-      + '<div class="carte"><b style="font-size:13px;color:#5A6585">MARGE NETTE VISÉE (après impôt et commission)</b>'
-      + '<div class="puces">' + [25, 30, 35, 40].map((m) => '<button class="puce ' + (Number(dv.MargeVisee) === m ? 'on' : '') + '" onclick="changerTaux({marge:' + m + '})">' + m + ' %</button>').join('') + '</div>'
-      + stepper('Commission (% du marché)', 'commission', dv.TauxCommission) + stepper('Impôt (% du marché)', 'impot', dv.TauxImpot)
-      + '<button class="bouton second" onclick="changerTaux({reinitialiser:true})">Recalculer toutes les lignes</button></div>'
+      + '<div class="carte"><b style="font-size:13px;color:#5A6585">COMMISSION ET IMPÔT (% du marché)</b>'
+      + stepper('Commission', 'commission', dv.TauxCommission) + stepper('Impôt', 'impot', dv.TauxImpot)
+      + '<div style="font-size:13px;color:#5A6585">Repère de marge pour le prix conseillé (il ne change jamais tes montants) :</div>'
+      + '<div class="puces">' + [25, 30, 35, 40].map((m) => '<button class="puce ' + (Number(dv.MargeVisee) === m ? 'on' : '') + '" onclick="changerTaux({marge:' + m + '})">' + m + ' %</button>').join('') + '</div></div>'
       + resultatProforma(dv, lignes)
       + '<div class="deux"><button class="bouton second" onclick="pdfProforma()">PDF client</button><button class="bouton" onclick="envoyerProforma()">Envoyer à ' + esc(a.Client) + '</button></div>'
       + (dv.Statut !== 'Validé' ? '<button class="bouton second" onclick="validerProforma()">Marquer comme validée par le client</button>' : '')
@@ -1067,27 +1083,59 @@ function stepper(nom, cle, valeur) {
   const v = Number(valeur);
   return '<div class="ligne" style="font-size:14px"><span>' + nom + '</span><span class="stepper"><button aria-label="Baisser" onclick="changerTaux({' + cle + ':' + (v - 1) + '})">−</button><b>' + v + ' %</b><button aria-label="Augmenter" onclick="changerTaux({' + cle + ':' + (v + 1) + '})">+</button></span></div>';
 }
+/** Prix conseillé pour la marge repère (indicatif, jamais appliqué tout seul). */
+function prixConseille(cout, dv) {
+  const reste = 1 - (Number(dv.MargeVisee) + Number(dv.TauxCommission) + Number(dv.TauxImpot)) / 100;
+  return reste > 0 ? Math.round(Number(cout) / reste) : 0;
+}
+function carteLigneDevis(l, dv) {
+  const n = Number(l.NumeroLigne), q = Number(l.Quantite), c = Number(l.CoutUnitaire), p = Number(l.PrixUnitaire);
+  const tot = q * p, net = tot - q * c - tot * (Number(dv.TauxCommission) + Number(dv.TauxImpot)) / 100;
+  const marge = tot ? Math.round(net / tot * 100) : 0, conseil = prixConseille(c, dv);
+  const champ = (cle, lib, v, type) => '<label class="mini">' + lib + '<input type="' + (type || 'number') + '" inputmode="' + (cle === 'quantite' ? 'decimal' : 'numeric') + '" value="' + esc(v) + '" onchange="modifierLigne(' + n + ',\'' + cle + '\',this.value)"></label>';
+  return '<div class="ligdev"><div class="ligne"><b style="font-size:13px;color:#5A6585">LIGNE ' + n + '</b><button class="lien-suppr" onclick="supprimerLigne(' + n + ')" aria-label="Supprimer la ligne ' + n + '">Supprimer</button></div>'
+    + '<textarea rows="' + Math.min(4, Math.ceil(String(l.Designation).length / 30) || 1) + '" aria-label="Désignation ligne ' + n + '" onchange="modifierLigne(' + n + ',\'designation\',this.value)" style="font-weight:600;min-height:0;resize:vertical">' + esc(l.Designation) + '</textarea>'
+    + '<div class="trois">' + champ('quantite', 'Quantité', q) + champ('cout', 'Coût unitaire', Math.round(c)) + champ('prix', 'Prix unitaire', Math.round(p)) + '</div>'
+    + '<small style="color:#5A6585">Total <b style="color:#0F1733">' + fcfa(tot) + '</b> · marge nette <b style="color:' + (marge >= Number(dv.MargeVisee) ? '#047857' : marge >= 0 ? '#B45309' : '#B91C1C') + '">' + marge + ' %</b>'
+    + (conseil && conseil !== Math.round(p) ? ' · conseillé ' + fcfa(conseil) + ' <a href="#" onclick="modifierLigne(' + n + ',\'prix\',' + conseil + ');return false" style="color:#2563EB;font-weight:600">utiliser</a>' : '') + '</small></div>';
+}
+function conseilNouvelle() {
+  const dv = etat.affaire && etat.affaire.devis, c = Number($('lc').value);
+  $('lconseil').innerHTML = dv && c > 0 ? 'Prix conseillé pour ' + Number(dv.MargeVisee) + ' % de marge : <b>' + fcfa(prixConseille(c, dv)) + '</b> <a href="#" onclick="$(\'lp\').value=' + prixConseille(c, dv) + ';return false" style="color:#2563EB;font-weight:600">utiliser</a>' : '';
+}
 function resultatProforma(dv, lignes) {
   const cout = lignes.reduce((s, l) => s + Number(l.Quantite) * Number(l.CoutUnitaire), 0);
   const prix = lignes.reduce((s, l) => s + Number(l.Quantite) * Number(l.PrixUnitaire), 0);
   const com = prix * Number(dv.TauxCommission) / 100, imp = prix * Number(dv.TauxImpot) / 100;
   const net = prix - cout - com - imp, marge = prix ? Math.round(net / prix * 1000) / 10 : 0;
-  return '<div class="resultat"><b style="font-size:13px;color:#DDE3FF">PRIX À PROPOSER AU CLIENT</b><div class="gros">' + fcfa(prix) + '</div>'
-    + '<div class="kv"><span>Coûts</span><span>' + fcfa(cout) + '</span></div><div class="kv"><span>Commission</span><span>' + fcfa(com) + '</span></div><div class="kv"><span>Impôt</span><span>' + fcfa(imp) + '</span></div>'
+  return '<div class="resultat"><b style="font-size:13px;color:#DDE3FF">PRIX FINAL AU CLIENT (modifiable)</b>'
+    + '<div class="prixfinal"><input id="pfinal" inputmode="numeric" aria-label="Prix final au client" value="' + Math.round(prix) + '" onchange="fixerPrixFinal(this.value)" onfocus="this.select()"><span>F</span></div>'
+    + '<small style="color:#DDE3FF">Tape ton prix final : les prix des lignes s\'ajustent pour tomber pile dessus.</small>'
+    + '<div class="kv"><span>Coûts</span><span>' + fcfa(cout) + '</span></div><div class="kv"><span>Commission ' + Number(dv.TauxCommission) + ' %</span><span>' + fcfa(com) + '</span></div><div class="kv"><span>Impôt ' + Number(dv.TauxImpot) + ' %</span><span>' + fcfa(imp) + '</span></div>'
     + '<div class="kv" style="font-weight:700"><span style="color:#fff">Bénéfice net</span><span>' + fcfa(net) + '</span></div>'
-    + '<div class="kv" style="font-weight:700"><span style="color:#fff">Marge nette réelle</span><span>' + marge + ' % (visée ' + Number(dv.MargeVisee) + ' %)</span></div></div>';
+    + '<div class="kv" style="font-weight:700"><span style="color:#fff">Marge nette obtenue</span><span>' + marge + ' %</span></div></div>';
 }
 function devisCourant() { return etat.affaire.devis.NumeroDevis; }
 function rafraichirProforma() { ECRANS.proforma({ numero: numeroCourant() }); }
 function creerProforma() { appel('creerDevis', { numero: numeroCourant() }).then(() => rafraichirProforma()).catch(echec); }
 function ajouterLigne(ev) {
   ev.preventDefault();
-  appel('ajouterLigneDevis', { devis: devisCourant(), designation: $('ld').value, quantite: $('lq').value, cout: $('lc').value }).then(() => rafraichirProforma()).catch(echec);
+  appel('ajouterLigneDevis', { devis: devisCourant(), designation: $('ld').value, quantite: $('lq').value, cout: $('lc').value, prix: $('lp').value }).then(() => rafraichirProforma()).catch(echec);
 }
-function modifierPrix(ligne, valeur) {
-  const prix = parseInt(String(valeur).replace(/\D/g, ''), 10);
-  if (isNaN(prix)) return;
-  appel('modifierPrixLigne', { devis: devisCourant(), ligne, prix }).then(() => rafraichirProforma()).catch(echec);
+function fixerPrixFinal(valeur) {
+  const total = String(valeur).replace(/\D/g, '');
+  if (!total) return;
+  appel('fixerPrixTotalDevis', { devis: devisCourant(), total }).then(() => { toast('Prix final : ' + fcfa(Number(total))); rafraichirProforma(); }).catch(echec);
+}
+function modifierLigne(ligne, cle, valeur) {
+  const champs = {};
+  champs[cle] = cle === 'designation' ? String(valeur) : String(valeur).replace(/\s/g, '');
+  if (cle !== 'designation' && champs[cle] === '') return;
+  appel('modifierLigneDevis', { devis: devisCourant(), ligne, champs }).then(() => rafraichirProforma()).catch(echec);
+}
+function supprimerLigne(ligne) {
+  if (!confirm('Supprimer la ligne ' + ligne + ' ?')) return;
+  appel('supprimerLigneDevis', { devis: devisCourant(), ligne }).then(() => rafraichirProforma()).catch(echec);
 }
 function changerTaux(t) { appel('changerTauxDevis', Object.assign({ devis: devisCourant() }, t)).then(() => rafraichirProforma()).catch(echec); }
 function pdfProforma() { appel('pdfProforma', { devis: devisCourant() }).then((r) => { window.open(r.url, '_blank'); }).catch(echec); }
