@@ -91,6 +91,12 @@ const ACTIONS_API = {
   mouvementsOutils: (a) => mouvementsOutils(a.prendre, a.rendre, a.lieu),
   sortirMateriels: (a) => sortirMateriels(a.numero, a.lignes),
   declarerRetourMateriel: (a) => declarerRetourMateriel(a.materiel, a.numero, a.posee, a.rapportee),
+  // Programme de la semaine (comptable, DG, DGA)
+  ecranSemaine: (a) => ecranSemaine(a.debut),
+  fixerFrais: (a) => fixerFraisMission(a.numero, a.poste, a.montant),
+  payerFrais: (a) => payerFraisMission(a.numero, a.poste, a.paiement),
+  annulerPaiementFrais: (a) => annulerPaiementFrais(a.numero, a.poste),
+  noterMissionCompta: (a) => noterMissionCompta(a.numero, a.texte),
   // Compte
   changerMonCode: (a) => definirCodeAcces(getEmailUtilisateurCourant(), a.code),
 };
@@ -143,6 +149,8 @@ function ecranAccueil() {
     rapportsARelire: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) !== -1 ? rapportsARelire() : [],
     // Missions de la personne (pas pour le DG et le DGA, qui voient tout ailleurs).
     mesMissions: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) === -1 ? missionsDe(utilisateur) : [],
+    // Programme de la semaine en résumé (DG, DGA, comptable).
+    semaine: ROLES_SEMAINE.indexOf(utilisateur.role) !== -1 ? resumeSemaine() : null,
   };
 }
 

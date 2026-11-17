@@ -97,6 +97,7 @@ function rappelerGroupesDuMois() {
 function alertesQuotidiennes() {
   verifierVehicules();
   rappelerGroupesDuMois();
+  try { envoyerResumeSemaineSiLundi(); } catch (e) { Logger.log('Résumé de la semaine : ' + e); }
 }
 
 /** Chaque vendredi : point de situation aux clients qui ont PointHebdo = Oui. */
@@ -126,7 +127,7 @@ function installerTousLesDeclencheurs() {
     ['traiterMailsEntrants', (b) => b.everyMinutes(15), 'mails entrants toutes les 15 min'],
     ['verifierOutilsNonRendus', (b) => b.everyDays(1).atHour(8), 'outils non rendus et stock bas à Jean, 8 h'],
     ['verifierFacturesEnRetard', (b) => b.everyDays(1).atHour(8), 'factures en retard, 8 h'],
-    ['alertesQuotidiennes', (b) => b.everyDays(1).atHour(7), 'véhicules à Arnaud et rappel des groupes, 7 h'],
+    ['alertesQuotidiennes', (b) => b.everyDays(1).atHour(7), 'véhicules à Arnaud, rappel des groupes et programme de la semaine le lundi, 7 h'],
     ['envoyerPointsHebdomadaires', (b) => b.onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(17), 'point de situation aux clients le vendredi, 17 h'],
   ];
   const installes = [];

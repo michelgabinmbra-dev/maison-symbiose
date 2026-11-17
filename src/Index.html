@@ -113,6 +113,39 @@ input[type=checkbox]{min-height:0;width:20px;height:20px;padding:0;flex:none;acc
 .section{padding:0 16px;display:flex;flex-direction:column;gap:12px;margin-top:-20px;position:relative}
 .connexion{min-height:100vh;background:linear-gradient(170deg,#0B1442,#142266 55%,#22307F);color:#fff;padding:60px 24px;display:flex;flex-direction:column;gap:18px;position:relative;overflow:hidden}
 .connexion .carte{color:var(--texte);gap:14px;padding:18px}
+/* Programme de la semaine (comptable, DG) */
+.semaine{border-radius:20px;padding:16px;background:linear-gradient(120deg,#0B1442,#1E3A8A 45%,#6D28D9 80%,#BE185D);color:#fff;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 28px rgba(59,42,155,.32);border:none;width:100%;text-align:left;position:relative;overflow:hidden}
+.semaine .orb.a{width:160px;height:160px;right:-50px;top:-60px}
+.semaine>*:not(.orb){position:relative}
+.semaine .surtitre{color:#C7D2FE}
+.chiffres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.chiffres div{background:rgba(255,255,255,.12);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.chiffres b{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chiffres span{font-size:11px;color:#DDE3FF;font-weight:600}
+.jauge{height:8px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden}
+.jauge i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#34D399,#22D3EE)}
+.semnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.semnav button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:12px;min-height:40px;min-width:44px;padding:0 10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:4px}
+.jourtitre{display:flex;align-items:center;gap:8px;margin:6px 2px 0;font-family:'Plus Jakarta Sans',Inter,sans-serif;font-weight:800;font-size:15px}
+.jourtitre small{font-family:Inter,sans-serif;font-weight:600;font-size:12px;color:var(--gris)}
+.jourtitre.auj{color:#6D28D9}
+.mission{background:#fff;border-radius:18px;padding:14px;box-shadow:0 4px 14px rgba(15,23,51,.07);display:flex;flex-direction:column;gap:10px;border-left:5px solid #22D3EE}
+.mission.urg{border-left-color:#E11D48}.mission.faite{border-left-color:#10B981}
+.mission h3{margin:0;font-size:15px;font-weight:800;line-height:1.3}
+.mission .info{font-size:13px;color:#3E4A6B;display:flex;gap:8px;align-items:flex-start}
+.mission .info svg{flex:none;margin-top:1px}
+.poste{display:flex;align-items:center;gap:8px;padding:10px;border-radius:14px;background:#F5F7FD}
+.poste .nom{flex:1;min-width:0;font-weight:700;font-size:14px}
+.poste .nom small{display:block;font-weight:500;font-size:11px;color:var(--gris)}
+.poste input{width:112px;min-height:44px;text-align:right;font-weight:700;flex:none;padding:0 10px}
+.poste .payer{min-height:44px;border-radius:12px;border:none;padding:0 14px;font-weight:800;color:#fff;background:linear-gradient(135deg,#10B981,#0F766E);flex:none}
+.poste.paye{background:#ECFDF5}
+.poste.paye .nom small{color:#047857}
+.formpaie{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;border-radius:14px;background:#ECFDF5}
+.formpaie .large{grid-column:1/-1}
+.note{font-size:13px;background:#FFFBEB;border-radius:12px;padding:8px 10px;color:#78350F}
+.note small{display:block;color:#A16207;font-size:11px}
+.lien{background:none;border:0;color:var(--bleu);font-weight:700;font-size:13px;min-height:40px;padding:0}
 /* Tablette et ordinateur : plus large, listes sur deux colonnes, menu sur le côté au-delà de 1100 px */
 @media (min-width:700px){
   #app{max-width:880px}
@@ -120,6 +153,7 @@ input[type=checkbox]{min-height:0;width:20px;height:20px;padding:0;flex:none;acc
   nav{max-width:560px}
   .feuille,.section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
   .feuille>*,.section>*{grid-column:1/-1}
+  .section>.mission{grid-column:auto}
   .feuille>.item,.section>.item,.feuille>button.item,.section>button.item{grid-column:auto;height:100%}
   .hero{padding:28px 28px 48px}.entete{padding:18px 28px 38px}.feuille{padding:20px 24px 0}.section{padding:0 24px}
   .hero h1{font-size:26px}.entete h1{font-size:24px}
@@ -155,6 +189,7 @@ const ICONES = {
   mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
   bouclier: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
   photo: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  argent: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 10v4M18 10v4"/>',
   boite: '<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
 };
 function svg(nom, taille, couleur, epaisseur) {
@@ -310,6 +345,7 @@ ECRANS.accueil = function () {
       + '<div class="tuile t3"><b>' + c.facturesEnRetard + '</b><span>Facture' + (c.facturesEnRetard > 1 ? 's' : '') + ' en retard</span></div>'
       + '<div class="tuile t4"><b>' + c.enExecution + '</b><span>En exécution</span></div></div></div>'
       + '<div class="feuille">'
+      + (d.semaine ? carteSemaine(d.semaine) : '')
       + (voitFinances() ? '<button class="bandeau" onclick="aller(\'point\')"><span><strong>Point de situation en 5 s</strong><small>AFG, UCP-FM… prêt en PDF ou par mail</small></span><span class="rond">' + svg('droite', 18, '#fff', 2.4) + '</span></button>' : '')
       + (voitFinances() ? '<button class="item" onclick="aller(\'materiel\')"><span class="ico vert">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Matériel et outils</b><small>Je prends, je rends, outils non rendus</small></span></button>' : '')
       + '<button class="item" onclick="aller(\'preventif\')"><span class="ico bleu">' + svg('bouclier', 22, '#fff') + '</span><span class="txt"><b>Maintenance préventive</b><small>Visites de mon groupe, fiche et rapport</small></span>' + svg('droite', 20, '#5A6585') + '</button>'
@@ -1265,6 +1301,108 @@ function retourMateriel(ev, i) {
   ev.preventDefault();
   const m = etat.materiel.sortiesEnCours[i];
   appel('declarerRetourMateriel', { materiel: m.Materiel, numero: m.NumeroAffaire, posee: $('rp' + i).value, rapportee: $('rr' + i).value }).then(() => { toast('Retour déclaré'); ECRANS.materiel(); }).catch(echec);
+}
+
+// ---------- Programme de la semaine (comptable, DG, DGA) ----------
+function chiffresSemaine(t) {
+  const pct = t.prevu > 0 ? Math.round(100 * t.paye / t.prevu) : 0;
+  return '<div class="chiffres"><div><b>' + fcfa(t.prevu) + '</b><span>Prévu</span></div><div><b>' + fcfa(t.paye) + '</b><span>Payé</span></div><div><b>' + fcfa(t.reste) + '</b><span>Reste à payer</span></div></div>'
+    + '<div class="jauge" role="img" aria-label="' + pct + ' % payé"><i style="width:' + pct + '%"></i></div>';
+}
+/** Carte de l'accueil : la semaine en un coup d'œil. */
+function carteSemaine(s) {
+  return '<button class="semaine" onclick="aller(\'semaine\')"><div class="orb a"></div>'
+    + '<div class="ligne"><span><span class="surtitre">Programme de la semaine</span><br><strong style="font-family:\'Plus Jakarta Sans\',Inter,sans-serif;font-size:18px">'
+    + s.missions + ' intervention' + (s.missions > 1 ? 's' : '') + (s.missions ? ' · ' + s.faites + ' faite' + (s.faites > 1 ? 's' : '') : '') + '</strong></span>'
+    + (s.urgences ? '<span class="pastille p-elevee">' + s.urgences + ' urgence' + (s.urgences > 1 ? 's' : '') + '</span>' : '<span class="rond">' + svg('droite', 18, '#fff', 2.4) + '</span>') + '</div>'
+    + chiffresSemaine(s) + '</button>';
+}
+function lundiLocal(iso, decalage) {
+  const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 7 * decalage); return d.toISOString().slice(0, 10);
+}
+function texteSemaine(debut, fin) {
+  const f = (x) => new Date(x + 'T00:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+  return 'du ' + f(debut) + ' au ' + f(fin);
+}
+ECRANS.semaine = function (p) {
+  appel('ecranSemaine', { debut: p.debut || '' }).then((d) => {
+    etat.semaine = d;
+    const t = d.totaux, courante = d.debut === d.cetteSemaine;
+    const auj = new Date().toISOString().slice(0, 10);
+    rendre('<div class="hero court"><div class="orb a"></div><div class="orb b"></div>'
+      + '<div class="surtitre">' + (courante ? 'Cette semaine' : 'Semaine') + '</div><h1>Programme ' + esc(texteSemaine(d.debut, d.fin)) + '</h1>'
+      + '<div class="semnav"><button onclick="aller(\'semaine\',{debut:\'' + lundiLocal(d.debut, -1) + '\'},true)" aria-label="Semaine précédente">' + svg('gauche', 16, '#fff', 2.4) + 'Précédente</button>'
+      + (courante ? '' : '<button onclick="aller(\'semaine\',{},true)">Cette semaine</button>')
+      + '<button onclick="aller(\'semaine\',{debut:\'' + lundiLocal(d.debut, 1) + '\'},true)" aria-label="Semaine suivante">Suivante' + svg('droite', 16, '#fff', 2.4) + '</button></div></div>'
+      + '<div class="section">'
+      + '<div class="semaine" style="cursor:default"><div class="ligne"><span><span class="surtitre">Sorties d\'argent</span><br><strong style="font-size:15px">'
+      + t.missions + ' intervention' + (t.missions > 1 ? 's' : '') + ' · ' + t.faites + ' faite' + (t.faites > 1 ? 's' : '') + (t.urgencesSemaine ? ' · ' + t.urgencesSemaine + ' urgence' + (t.urgencesSemaine > 1 ? 's' : '') : '') + '</strong></span></div>'
+      + chiffresSemaine(t) + '</div>'
+      + d.jours.map((j) => '<div class="jourtitre' + (j.date === auj ? ' auj' : '') + '">' + svg('calendrier', 18, j.date === auj ? '#6D28D9' : '#5A6585', 2.2) + esc(j.libelle) + (j.date === auj ? ' <small>aujourd\'hui</small>' : '') + (j.missions.length ? ' <small>· ' + j.missions.length + '</small>' : '') + '</div>'
+        + (j.missions.length ? j.missions.map(carteMissionSemaine).join('') : '<div class="vide" style="padding:6px">Rien de programmé.</div>')).join('')
+      + '<div class="carte" style="font-size:13px;color:#5A6585">Les montants « conseillés » viennent du coût de la proforma. Corrige-les à la main, puis touche « Payé » : le paiement est noté comme dépense de l\'affaire. Le résumé part aussi par mail le lundi matin.</div>'
+      + '</div>', null);
+  }).catch(echec);
+};
+function carteMissionSemaine(m) {
+  const i = etat.semaine.jours.reduce((t, j) => t.concat(j.missions), []).indexOf(m);
+  const acc = (m.accessoires || []).map((l) => esc(l.designation) + (l.quantite ? ' ×' + l.quantite : '')).join(', ');
+  const stock = (m.sortiesStock || []).map((l) => esc(l.materiel) + ' ×' + l.quantite).join(', ');
+  return '<div class="mission' + (m.faite ? ' faite' : (m.urgence ? ' urg' : '')) + '">'
+    + '<div class="ligne" style="align-items:flex-start"><span style="min-width:0"><small style="color:#5A6585;font-weight:700">' + (m.heure ? esc(m.heure) + ' · ' : '') + esc(m.type || '') + '</small>'
+    + '<h3>' + esc(m.client) + (m.site ? ' · ' + esc(m.site) : '') + '</h3><small style="color:#3E4A6B">' + esc(m.titre) + '</small></span>'
+    + (m.faite ? '<span class="pastille p-ok">Faite</span>' : (m.urgence ? '<span class="pastille p-elevee">Urgence</span>' : '')) + '</div>'
+    + '<div class="info">' + svg('liste', 16, '#5A6585') + '<span><b>Équipe :</b> ' + esc(m.equipe || m.groupe || 'à désigner') + '</span></div>'
+    + '<div class="info">' + svg('auto', 16, '#5A6585') + '<span>' + (m.vehicules.length ? '<b>Véhicule :</b> ' + esc(m.vehicules.join(', ')) : '<b>Véhicule :</b> aucun noté ce jour, transport à prévoir') + '</span></div>'
+    + '<div class="info">' + svg('boite', 16, '#5A6585') + '<span><b>Accessoires :</b> ' + (acc ? acc + (m.devis ? ' <small>(proforma ' + esc(m.devis) + ')</small>' : '') : 'pas de proforma') + (stock ? '<br><b>Sortis du stock :</b> ' + stock : '') + '</span></div>'
+    + (m.depensesDeja ? '<div class="info" style="color:#B45309">' + svg('argent', 16, '#B45309') + '<span>Déjà ' + fcfa(m.depensesDeja) + ' de dépenses notées sur cette affaire.</span></div>' : '')
+    + m.postes.map((p, k) => lignePoste(m, p, i, k)).join('')
+    + '<div id="fp' + i + '"></div>'
+    + (m.notes || []).map((n) => '<div class="note">' + esc(n.texte) + '<small>' + esc(n.par) + ' · ' + esc(depuis(n.date)) + '</small></div>').join('')
+    + '<div style="display:flex;gap:8px"><input id="nt' + i + '" placeholder="Ajouter une note…" style="min-height:44px"><button class="puce" onclick="noterMission(' + i + ')">Noter</button></div>'
+    + '<button class="lien" style="text-align:left" onclick="aller(\'affaire\',{numero:\'' + esc(m.numero) + '\'})">Ouvrir l\'affaire ' + esc(m.numero) + ' ›</button>'
+    + '</div>';
+}
+function lignePoste(m, p, i, k) {
+  if (p.paye) {
+    return '<div class="poste paye"><span class="nom">' + esc(p.poste) + '<small>Payé à ' + esc(p.payeA) + ' le ' + esc(dateCourte(p.payeLe)) + '</small></span><b>' + fcfa(p.montantPaye) + '</b>'
+      + '<button class="lien-suppr" onclick="annulerPaiement(' + i + ',' + k + ')">Annuler</button></div>';
+  }
+  return '<div class="poste"><span class="nom">' + esc(p.poste) + '<small>' + (p.saisi ? 'montant saisi' : (p.conseil ? 'conseillé (proforma)' : 'à saisir')) + '</small></span>'
+    + '<input id="mt' + i + '_' + k + '" inputmode="numeric" aria-label="' + esc(p.poste) + ' prévu" value="' + (p.montant || '') + '" placeholder="0" onchange="fixerFrais(' + i + ',' + k + ',this.value)">'
+    + '<button class="payer" onclick="ouvrirPaiement(' + i + ',' + k + ')">Payé</button></div>';
+}
+function missionSemaine(i) { return etat.semaine.jours.reduce((t, j) => t.concat(j.missions), [])[i]; }
+function rechargerSemaine(msg) { if (msg) toast(msg); ECRANS.semaine({ debut: etat.semaine.debut }); }
+function fixerFrais(i, k, v) {
+  const m = missionSemaine(i);
+  appel('fixerFrais', { numero: m.numero, poste: m.postes[k].poste, montant: String(v).replace(/[^\d]/g, '') }).then(() => rechargerSemaine('Montant enregistré')).catch(echec);
+}
+function ouvrirPaiement(i, k) {
+  const m = missionSemaine(i), p = m.postes[k];
+  const saisi = $('mt' + i + '_' + k).value.replace(/[^\d]/g, '');
+  $('fp' + i).innerHTML = '<form class="formpaie" onsubmit="payerFrais(event,' + i + ',' + k + ')"><b class="large" style="font-size:13px;color:#047857">' + esc(p.poste).toUpperCase() + ' PAYÉ</b>'
+    + '<div class="champ large"><label for="pa' + i + '">À qui</label><input id="pa' + i + '" value="' + esc(String(m.equipe || '').split(',')[0].trim()) + '" required></div>'
+    + '<div class="champ"><label for="pm' + i + '">Montant (F)</label><input id="pm' + i + '" inputmode="numeric" value="' + esc(saisi || p.montant || '') + '" required></div>'
+    + '<div class="champ"><label for="pd' + i + '">Date</label><input id="pd' + i + '" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></div>'
+    + '<button class="bouton large" type="submit">Confirmer le paiement</button></form>';
+  $('pa' + i).focus();
+}
+function payerFrais(ev, i, k) {
+  ev.preventDefault();
+  const m = missionSemaine(i);
+  appel('payerFrais', { numero: m.numero, poste: m.postes[k].poste, paiement: { a: $('pa' + i).value, montant: $('pm' + i).value.replace(/[^\d]/g, ''), date: $('pd' + i).value } })
+    .then(() => rechargerSemaine(m.postes[k].poste + ' payé')).catch(echec);
+}
+function annulerPaiement(i, k) {
+  const m = missionSemaine(i);
+  if (!confirm('Annuler ce paiement ? La dépense liée sera retirée.')) return;
+  appel('annulerPaiementFrais', { numero: m.numero, poste: m.postes[k].poste }).then(() => rechargerSemaine('Paiement annulé')).catch(echec);
+}
+function noterMission(i) {
+  const m = missionSemaine(i), texte = $('nt' + i).value.trim();
+  if (!texte) return;
+  appel('noterMissionCompta', { numero: m.numero, texte }).then(() => rechargerSemaine('Note ajoutée')).catch(echec);
 }
 
 // ---------- Argent ----------
