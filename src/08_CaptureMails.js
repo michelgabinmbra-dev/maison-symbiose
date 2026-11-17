@@ -31,7 +31,13 @@ function traiterMailsEntrants() {
   const threads = libelleATraiter.getThreads();
   threads.forEach((thread) => {
     try {
-      creerDemandeDepuisMail(thread);
+      const m = thread.getMessages()[0];
+      if (mailPasDuTravail(m.getFrom(), thread.getFirstMessageSubject(), m.getPlainBody())) {
+        // Code de connexion, publicité… : rangé sans créer d'affaire.
+        Logger.log('Mail écarté (pas du travail) : ' + thread.getFirstMessageSubject());
+      } else {
+        creerDemandeDepuisMail(thread);
+      }
       thread.removeLabel(libelleATraiter);
       thread.addLabel(libelleTraite);
     } catch (erreur) {
@@ -42,6 +48,63 @@ function traiterMailsEntrants() {
   try { verifierDelais(); } catch (e) { Logger.log('Relances : ' + e); }
   // Le samedi à partir de 18 h : planning de la semaine à chaque technicien (une fois).
   try { verifierPlanningHebdo(); } catch (e) { Logger.log('Planning hebdo : ' + e); }
+}
+
+// ---------- Mails qui ne sont pas du travail ----------
+
+/** Sujets écartés d'office : codes de connexion, mots de passe, newsletters. */
+const SUJETS_PAS_DU_TRAVAIL = [
+  /confirmez votre identit/i, /code de (v[ée]rification|connexion|s[ée]curit[ée])/i, /\bOTP\b/i,
+  /mot de passe/i, /one[- ]time (password|code)/i, /verification code/i, /newsletter/i, /d[ée]sabonner/i,
+];
+const CLE_EXPEDITEURS_IGNORES = 'EXPEDITEURS_IGNORES';
+
+function adresseMail(texte) {
+  const m = /<([^>]+)>/.exec(String(texte || ''));
+  return String(m ? m[1] : texte || '').trim().toLowerCase();
+}
+
+/** Adresses retenues avec le bouton « Pas du travail » : leurs prochains mails seront écartés. */
+function expediteursIgnores() {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(CLE_EXPEDITEURS_IGNORES) || '[]'); } catch (e) { return []; }
+}
+
+function mailPasDuTravail(expediteur, sujet, corps) {
+  const adresse = adresseMail(expediteur);
+  if (adresse && expediteursIgnores().indexOf(adresse) !== -1) return true;
+  if (SUJETS_PAS_DU_TRAVAIL.some((r) => r.test(String(sujet || '')))) return true;
+  // Mail automatique (notification, no-reply) qui ne parle que d'un code à usage unique.
+  return /^(no-?reply|notifications?|ne-pas-repondre)@/.test(adresse) && /code|valide pendant|usage unique/i.test(String(corps || ''));
+}
+
+/**
+ * « Pas du travail » (DG, DGA, Planning) : le mail sort des demandes (statut Abandonnée, noté au journal)
+ * et, si l'expéditeur est une adresse inconnue, ses prochains mails seront écartés.
+ */
+function ignorerMailAffaire(numeroAffaire) {
+  const u = exigerRoleOuDroit([ROLES.DG, ROLES.DGA], DROITS.PLANNING);
+  const r = trouverAffaire(numeroAffaire);
+  const a = ligneVersObjet(r.entetes, r.ligne);
+  if (a.Source !== SOURCES_DEMANDE.MAIL) throw new Error('Seuls les mails peuvent être écartés ainsi.');
+  const feuille = getFeuilleDonnees(NOMS_FEUILLES.AFFAIRES);
+  majCellule(feuille, r, 'Statut', STATUTS_AFFAIRE.ABANDONNEE);
+  majCellule(feuille, r, 'DateMaj', new Date());
+  const adresse = /@/.test(String(a.Client || '')) ? adresseMail(a.Client) : '';
+  if (adresse) {
+    const liste = expediteursIgnores();
+    if (liste.indexOf(adresse) === -1) {
+      liste.push(adresse);
+      PropertiesService.getScriptProperties().setProperty(CLE_EXPEDITEURS_IGNORES, JSON.stringify(liste));
+    }
+  }
+  noterJournal(numeroAffaire, TYPES_JOURNAL.NOTE, 'Pas du travail' + (adresse ? ' · mails de ' + adresse + ' écartés' : ''), u.nom);
+  // Les autres mails déjà captés du même expéditeur sortent aussi.
+  let autres = 0;
+  if (adresse) {
+    lireLignes(NOMS_FEUILLES.AFFAIRES).filter((x) => x.NumeroAffaire !== numeroAffaire && adresseMail(x.Client) === adresse && x.Statut === STATUTS_AFFAIRE.NOUVELLE_DEMANDE)
+      .forEach((x) => { majCellule(feuille, trouverAffaire(x.NumeroAffaire), 'Statut', STATUTS_AFFAIRE.ABANDONNEE); autres++; });
+  }
+  return { adresse, autres };
 }
 
 function creerDemandeDepuisMail(thread) {

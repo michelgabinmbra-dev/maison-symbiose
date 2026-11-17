@@ -10,7 +10,7 @@
  */
 
 const ENTETES_JOURNAL = ['NumeroAffaire', 'Date', 'Par', 'Type', 'Detail'];
-const TYPES_JOURNAL = { APPEL: 'Appel', PROGRAMMATION: 'Programmation', RAPPORT: 'Rapport', ENVOI: 'Envoi', FACTURATION: 'Facturation' };
+const TYPES_JOURNAL = { APPEL: 'Appel', PROGRAMMATION: 'Programmation', RAPPORT: 'Rapport', ENVOI: 'Envoi', FACTURATION: 'Facturation', NOTE: 'Note' };
 const ROLES_CIRCUIT = [ROLES.DG, ROLES.DGA];
 
 function feuilleJournal() {

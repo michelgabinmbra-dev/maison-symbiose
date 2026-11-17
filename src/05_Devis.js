@@ -67,65 +67,132 @@ function detaillerPrix(coutEstime, margeVisee, tauxCommission, tauxImpot) {
 }
 
 // ---------- Lignes de la proforma ----------
-// Chaque ligne reçoit un prix calculé avec la marge du devis, mais le DG/DGA peut le corriger à
-// la main (la ventilation n'est pas forcément uniforme). Une ligne corrigée n'est plus recalculée
-// automatiquement ; le devis affiche la marge nette RÉELLE qui en résulte.
+// Le DG/DGA saisit lui-même ses montants (quantité, coût, prix) et les corrige quand il veut.
+// L'appli ne réécrit jamais un prix : elle affiche seulement la commission, l'impôt, le bénéfice
+// et la marge nette qui résultent des montants saisis, et un prix conseillé à titre indicatif.
 
-/** Ajoute une ligne à un devis, avec un prix unitaire calculé. Renvoie le numéro de la ligne. */
-function ajouterLigneDevis(numeroDevis, designation, quantite, coutUnitaire) {
+/**
+ * Ajoute une ligne à un devis. Le prix unitaire est celui saisi (la main reste au DG/DGA) ;
+ * s'il est laissé vide, on prend le prix conseillé pour la marge repère du devis.
+ * Renvoie le numéro de la ligne.
+ */
+function ajouterLigneDevis(numeroDevis, designation, quantite, coutUnitaire, prixUnitaire) {
   exigerRole(Object.values(ROLES));
-  if (!designation || !(Number(quantite) > 0) || coutUnitaire == null) {
+  if (!designation || !(Number(quantite) > 0) || coutUnitaire == null || coutUnitaire === '') {
     throw new Error('Désignation, quantité positive et coût unitaire sont obligatoires.');
   }
   const devis = ligneVersObjet(trouverDevis(numeroDevis).entetes, trouverDevis(numeroDevis).ligne);
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.LIGNES_DEVIS);
   const numeroLigne = lireLignes(NOMS_FEUILLES.LIGNES_DEVIS)
     .filter((l) => l.NumeroDevis === numeroDevis).length + 1;
-  const prixUnitaire = ventilerPrix(coutUnitaire, devis.MargeVisee, devis.TauxCommission, devis.TauxImpot);
-  feuille.appendRow([numeroDevis, numeroLigne, designation, Number(quantite), Number(coutUnitaire), prixUnitaire, false]);
+  const saisi = prixUnitaire != null && prixUnitaire !== '' && Number(prixUnitaire) >= 0;
+  const prix = saisi ? Math.round(Number(prixUnitaire))
+    : ventilerPrix(coutUnitaire, devis.MargeVisee, devis.TauxCommission, devis.TauxImpot);
+  feuille.appendRow([numeroDevis, numeroLigne, String(designation).trim(), Number(quantite), Number(coutUnitaire), prix, saisi]);
   recalculerDevis(numeroDevis);
   return numeroLigne;
 }
 
 /** Corrige à la main le prix unitaire d'une ligne (DG ou DGA). */
 function modifierPrixLigne(numeroDevis, numeroLigne, prixUnitaire) {
+  return modifierLigneDevis(numeroDevis, numeroLigne, { prix: prixUnitaire });
+}
+
+/**
+ * Modifie une ligne à la main (DG ou DGA) : désignation, quantité, coût unitaire, prix unitaire.
+ * Rien n'est recalculé derrière : les montants restent ceux saisis.
+ */
+function modifierLigneDevis(numeroDevis, numeroLigne, champs) {
   exigerRole([ROLES.DG, ROLES.DGA]);
-  if (!(Number(prixUnitaire) >= 0)) {
-    throw new Error('Prix unitaire invalide : ' + prixUnitaire);
-  }
+  champs = champs || {};
   const resultat = trouverLigneDevis(numeroDevis, numeroLigne);
   const feuille = getFeuilleDonnees(NOMS_FEUILLES.LIGNES_DEVIS);
-  majCellule(feuille, resultat, 'PrixUnitaire', Number(prixUnitaire));
-  majCellule(feuille, resultat, 'PrixModifieMain', true);
+  const nombre = (v, nom, strict) => {
+    const n = Number(String(v).replace(/\s/g, '').replace(',', '.'));
+    if (isNaN(n) || n < 0 || (strict && n === 0)) throw new Error(nom + ' invalide : ' + v);
+    return n;
+  };
+  if (champs.designation != null) {
+    if (!String(champs.designation).trim()) throw new Error('La désignation ne peut pas être vide.');
+    majCellule(feuille, resultat, 'Designation', String(champs.designation).trim());
+  }
+  if (champs.quantite != null && champs.quantite !== '') majCellule(feuille, resultat, 'Quantite', nombre(champs.quantite, 'Quantité', true));
+  if (champs.cout != null && champs.cout !== '') majCellule(feuille, resultat, 'CoutUnitaire', Math.round(nombre(champs.cout, 'Coût unitaire')));
+  if (champs.prix != null && champs.prix !== '') {
+    majCellule(feuille, resultat, 'PrixUnitaire', Math.round(nombre(champs.prix, 'Prix unitaire')));
+    majCellule(feuille, resultat, 'PrixModifieMain', true);
+  }
   return recalculerDevis(numeroDevis);
 }
 
 /**
- * Change la marge, la commission ou l'impôt d'un devis (DG ou DGA) et recalcule les lignes non
- * corrigées à la main. Passer reinitialiser = true pour recalculer aussi les lignes corrigées.
+ * Fixe le prix final (total du marché) à la main (DG ou DGA). Les prix unitaires des lignes sont
+ * ajustés en proportion pour que la proforma et la facture tombent exactement sur ce total ;
+ * l'arrondi restant va sur la ligne la plus chère. Les coûts ne bougent pas.
  */
-function changerTauxDevis(numeroDevis, margeVisee, tauxCommission, tauxImpot, reinitialiser) {
+function fixerPrixTotalDevis(numeroDevis, total) {
+  exigerRole([ROLES.DG, ROLES.DGA]);
+  const cible = Math.round(Number(String(total).replace(/\s/g, '')));
+  if (!(cible >= 0)) throw new Error('Prix final invalide : ' + total);
+  const feuille = getFeuilleDonnees(NOMS_FEUILLES.LIGNES_DEVIS);
+  const valeurs = feuille.getDataRange().getValues();
+  const entetes = valeurs[0];
+  const lignes = [];
+  for (let i = 1; i < valeurs.length; i++) {
+    const l = ligneVersObjet(entetes, valeurs[i]);
+    if (l.NumeroDevis === numeroDevis) lignes.push({ position: { index: i + 1, ligne: valeurs[i], entetes }, q: Number(l.Quantite) || 1, p: Number(l.PrixUnitaire) || 0 });
+  }
+  if (!lignes.length) throw new Error('Ajoute d\'abord au moins une ligne.');
+  const actuel = lignes.reduce((s, l) => s + l.q * l.p, 0);
+  lignes.forEach((l) => { l.nouveau = actuel > 0 ? Math.round(l.p * cible / actuel) : 0; });
+  if (!(actuel > 0)) lignes[0].nouveau = Math.round(cible / lignes[0].q);
+  // Arrondi : on corrige sur la ligne au plus gros montant, en restant exact si sa quantité vaut 1.
+  const ecart = cible - lignes.reduce((s, l) => s + l.q * l.nouveau, 0);
+  if (ecart) {
+    const choix = lignes.filter((l) => l.q === 1).sort((a, b) => b.nouveau - a.nouveau)[0]
+      || lignes.slice().sort((a, b) => b.q * b.nouveau - a.q * a.nouveau)[0];
+    choix.nouveau = Math.max(0, choix.nouveau + Math.round(ecart / choix.q));
+  }
+  lignes.forEach((l) => {
+    majCellule(feuille, l.position, 'PrixUnitaire', l.nouveau);
+    majCellule(feuille, l.position, 'PrixModifieMain', true);
+  });
+  return recalculerDevis(numeroDevis);
+}
+
+/** Supprime une ligne (DG ou DGA) et renumérote les suivantes. */
+function supprimerLigneDevis(numeroDevis, numeroLigne) {
+  exigerRole([ROLES.DG, ROLES.DGA]);
+  const feuille = getFeuilleDonnees(NOMS_FEUILLES.LIGNES_DEVIS);
+  feuille.deleteRow(trouverLigneDevis(numeroDevis, numeroLigne).index);
+  const valeurs = feuille.getDataRange().getValues();
+  const entetes = valeurs[0];
+  const colDevis = entetes.indexOf('NumeroDevis'), colNum = entetes.indexOf('NumeroLigne');
+  for (let i = 1; i < valeurs.length; i++) {
+    if (valeurs[i][colDevis] === numeroDevis && Number(valeurs[i][colNum]) > Number(numeroLigne)) {
+      feuille.getRange(i + 1, colNum + 1).setValue(Number(valeurs[i][colNum]) - 1);
+    }
+  }
+  return recalculerDevis(numeroDevis);
+}
+
+/**
+ * Change la marge repère, la commission ou l'impôt d'un devis (DG ou DGA).
+ * Les prix des lignes ne bougent JAMAIS : seuls la commission, l'impôt et la marge obtenue
+ * affichés sont recalculés à partir des montants saisis.
+ */
+function changerTauxDevis(numeroDevis, margeVisee, tauxCommission, tauxImpot) {
   exigerRole([ROLES.DG, ROLES.DGA]);
   const feuilleDevis = getFeuilleDonnees(NOMS_FEUILLES.DEVIS);
   const resultat = trouverDevis(numeroDevis);
-  if (margeVisee != null && margeVisee !== '') majCellule(feuilleDevis, resultat, 'MargeVisee', Number(margeVisee));
-  if (tauxCommission != null && tauxCommission !== '') majCellule(feuilleDevis, resultat, 'TauxCommission', Number(tauxCommission));
-  if (tauxImpot != null && tauxImpot !== '') majCellule(feuilleDevis, resultat, 'TauxImpot', Number(tauxImpot));
-
-  const devis = ligneVersObjet(trouverDevis(numeroDevis).entetes, trouverDevis(numeroDevis).ligne);
-  const feuilleLignes = getFeuilleDonnees(NOMS_FEUILLES.LIGNES_DEVIS);
-  const valeurs = feuilleLignes.getDataRange().getValues();
-  const entetes = valeurs[0];
-  for (let i = 1; i < valeurs.length; i++) {
-    const ligne = ligneVersObjet(entetes, valeurs[i]);
-    if (ligne.NumeroDevis !== numeroDevis || (ligne.PrixModifieMain === true && !reinitialiser)) {
-      continue;
-    }
-    const position = { index: i + 1, ligne: valeurs[i], entetes };
-    majCellule(feuilleLignes, position, 'PrixUnitaire',
-      ventilerPrix(ligne.CoutUnitaire, devis.MargeVisee, devis.TauxCommission, devis.TauxImpot));
-    majCellule(feuilleLignes, position, 'PrixModifieMain', false);
-  }
+  const taux = (v, nom) => {
+    const n = Number(v);
+    if (isNaN(n) || n < 0 || n >= 100) throw new Error(nom + ' invalide : ' + v);
+    return n;
+  };
+  if (margeVisee != null && margeVisee !== '') majCellule(feuilleDevis, resultat, 'MargeVisee', taux(margeVisee, 'Marge'));
+  if (tauxCommission != null && tauxCommission !== '') majCellule(feuilleDevis, resultat, 'TauxCommission', taux(tauxCommission, 'Commission'));
+  if (tauxImpot != null && tauxImpot !== '') majCellule(feuilleDevis, resultat, 'TauxImpot', taux(tauxImpot, 'Impôt'));
   return recalculerDevis(numeroDevis);
 }
 

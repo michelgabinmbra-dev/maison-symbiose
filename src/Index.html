@@ -92,6 +92,14 @@ input[type=checkbox]{min-height:0;width:20px;height:20px;padding:0;flex:none;acc
 .lp{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .lp input{width:124px;text-align:right;font-weight:700;flex:none}
 .lp input.main{border:2px solid #EA580C;background:#FFF7ED}
+.ligdev{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid #E5E9F2}
+.prixfinal{display:flex;align-items:center;gap:8px;margin:6px 0 2px}
+.prixfinal input{flex:1;min-width:0;font-size:34px;font-weight:800;color:#fff;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.45);border-radius:14px;padding:6px 12px}
+.prixfinal span{font-size:30px;font-weight:800;color:#fff}
+.trois{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mini{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#5A6585;font-weight:600}
+.mini input{width:100%;text-align:right;font-weight:700;min-width:0}
+.lien-suppr{background:none;border:0;color:#B91C1C;font-weight:600;font-size:13px;min-height:44px;padding:0 4px}
 .stepper{display:flex;align-items:center;gap:6px}
 .stepper button{width:44px;height:44px;border-radius:12px;border:1px solid #C9D0E3;background:#fff;font-size:18px;color:var(--texte)}
 .stepper b{min-width:48px;text-align:center}
@@ -105,6 +113,39 @@ input[type=checkbox]{min-height:0;width:20px;height:20px;padding:0;flex:none;acc
 .section{padding:0 16px;display:flex;flex-direction:column;gap:12px;margin-top:-20px;position:relative}
 .connexion{min-height:100vh;background:linear-gradient(170deg,#0B1442,#142266 55%,#22307F);color:#fff;padding:60px 24px;display:flex;flex-direction:column;gap:18px;position:relative;overflow:hidden}
 .connexion .carte{color:var(--texte);gap:14px;padding:18px}
+/* Programme de la semaine (comptable, DG) */
+.semaine{border-radius:20px;padding:16px;background:linear-gradient(120deg,#0B1442,#1E3A8A 45%,#6D28D9 80%,#BE185D);color:#fff;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 28px rgba(59,42,155,.32);border:none;width:100%;text-align:left;position:relative;overflow:hidden}
+.semaine .orb.a{width:160px;height:160px;right:-50px;top:-60px}
+.semaine>*:not(.orb){position:relative}
+.semaine .surtitre{color:#C7D2FE}
+.chiffres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.chiffres div{background:rgba(255,255,255,.12);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.chiffres b{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chiffres span{font-size:11px;color:#DDE3FF;font-weight:600}
+.jauge{height:8px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden}
+.jauge i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#34D399,#22D3EE)}
+.semnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.semnav button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:12px;min-height:40px;min-width:44px;padding:0 10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:4px}
+.jourtitre{display:flex;align-items:center;gap:8px;margin:6px 2px 0;font-family:'Plus Jakarta Sans',Inter,sans-serif;font-weight:800;font-size:15px}
+.jourtitre small{font-family:Inter,sans-serif;font-weight:600;font-size:12px;color:var(--gris)}
+.jourtitre.auj{color:#6D28D9}
+.mission{background:#fff;border-radius:18px;padding:14px;box-shadow:0 4px 14px rgba(15,23,51,.07);display:flex;flex-direction:column;gap:10px;border-left:5px solid #22D3EE}
+.mission.urg{border-left-color:#E11D48}.mission.faite{border-left-color:#10B981}
+.mission h3{margin:0;font-size:15px;font-weight:800;line-height:1.3}
+.mission .info{font-size:13px;color:#3E4A6B;display:flex;gap:8px;align-items:flex-start}
+.mission .info svg{flex:none;margin-top:1px}
+.poste{display:flex;align-items:center;gap:8px;padding:10px;border-radius:14px;background:#F5F7FD}
+.poste .nom{flex:1;min-width:0;font-weight:700;font-size:14px}
+.poste .nom small{display:block;font-weight:500;font-size:11px;color:var(--gris)}
+.poste input{width:112px;min-height:44px;text-align:right;font-weight:700;flex:none;padding:0 10px}
+.poste .payer{min-height:44px;border-radius:12px;border:none;padding:0 14px;font-weight:800;color:#fff;background:linear-gradient(135deg,#10B981,#0F766E);flex:none}
+.poste.paye{background:#ECFDF5}
+.poste.paye .nom small{color:#047857}
+.formpaie{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;border-radius:14px;background:#ECFDF5}
+.formpaie .large{grid-column:1/-1}
+.note{font-size:13px;background:#FFFBEB;border-radius:12px;padding:8px 10px;color:#78350F}
+.note small{display:block;color:#A16207;font-size:11px}
+.lien{background:none;border:0;color:var(--bleu);font-weight:700;font-size:13px;min-height:40px;padding:0}
 /* Tablette et ordinateur : plus large, listes sur deux colonnes, menu sur le côté au-delà de 1100 px */
 @media (min-width:700px){
   #app{max-width:880px}
@@ -112,6 +153,7 @@ input[type=checkbox]{min-height:0;width:20px;height:20px;padding:0;flex:none;acc
   nav{max-width:560px}
   .feuille,.section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
   .feuille>*,.section>*{grid-column:1/-1}
+  .section>.mission{grid-column:auto}
   .feuille>.item,.section>.item,.feuille>button.item,.section>button.item{grid-column:auto;height:100%}
   .hero{padding:28px 28px 48px}.entete{padding:18px 28px 38px}.feuille{padding:20px 24px 0}.section{padding:0 24px}
   .hero h1{font-size:26px}.entete h1{font-size:24px}
@@ -147,6 +189,7 @@ const ICONES = {
   mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
   bouclier: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
   photo: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  argent: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 10v4M18 10v4"/>',
   boite: '<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
 };
 function svg(nom, taille, couleur, epaisseur) {
@@ -302,6 +345,7 @@ ECRANS.accueil = function () {
       + '<div class="tuile t3"><b>' + c.facturesEnRetard + '</b><span>Facture' + (c.facturesEnRetard > 1 ? 's' : '') + ' en retard</span></div>'
       + '<div class="tuile t4"><b>' + c.enExecution + '</b><span>En exécution</span></div></div></div>'
       + '<div class="feuille">'
+      + (d.semaine ? carteSemaine(d.semaine) : '')
       + (voitFinances() ? '<button class="bandeau" onclick="aller(\'point\')"><span><strong>Point de situation en 5 s</strong><small>AFG, UCP-FM… prêt en PDF ou par mail</small></span><span class="rond">' + svg('droite', 18, '#fff', 2.4) + '</span></button>' : '')
       + (voitFinances() ? '<button class="item" onclick="aller(\'materiel\')"><span class="ico vert">' + svg('outil', 22, '#fff') + '</span><span class="txt"><b>Matériel et outils</b><small>Je prends, je rends, outils non rendus</small></span></button>' : '')
       + '<button class="item" onclick="aller(\'preventif\')"><span class="ico bleu">' + svg('bouclier', 22, '#fff') + '</span><span class="txt"><b>Maintenance préventive</b><small>Visites de mon groupe, fiche et rapport</small></span>' + svg('droite', 20, '#5A6585') + '</button>'
@@ -403,6 +447,7 @@ ECRANS.affaire = function (p) {
     const delai = a.DelaiPrevu ? new Date(a.DelaiPrevu).toISOString().slice(0, 10) : '';
     let html = entete(a.Titre || a.TypeIntervention, esc(a.NumeroAffaire) + ' · ' + esc(LIBELLES_TYPE[a.TypeIntervention] || a.TypeIntervention) + ' · ' + esc(a.Source) + '<br>' + esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : '') + (a.Agent ? ' · Agent : ' + esc(a.Agent) : ''))
       + '<div class="section">'
+      + (d.peutIgnorerMail ? '<div class="carte" style="background:#EEF2FF"><div style="font-size:14px"><b>Ce mail n\'est pas du travail ?</b> (code de connexion, publicité…) Écarte-le : il quitte l\'accueil et les prochains mails de cet expéditeur seront rangés tout seuls.</div><button class="bouton second" onclick="ignorerMail(this)">Pas du travail, écarter</button></div>' : '')
       + '<div class="carte"><div class="ligne"><b style="font-size:13px;color:#5A6585">OÙ EN EST LE DOSSIER</b>' + pastillePriorite(a.Priorite) + '</div>'
       + '<div class="etapes">' + etapes.map((e, i) => '<i class="' + (i <= rang ? 'on' : '') + '"></i>').join('') + '</div>'
       + '<div class="etiquettes">' + etapes.map((e, i) => '<span' + (i === rang ? ' style="color:#0F1733;font-weight:700"' : '') + '>' + e[1] + '</span>').join('') + '</div>'
@@ -553,6 +598,11 @@ function nettoyerMail(t) {
 }
 function cloturerContrat() { appel('cloturerContrat', { numero: numeroCourant() }).then(() => { toast('Dossier clôturé'); rafraichirAffaire(); }).catch(echec); }
 function definirType(t) { appel('definirType', { numero: numeroCourant(), type: t }).then(() => { toast('Type : ' + LIBELLES_TYPE[t]); rafraichirAffaire(); }).catch(echec); }
+function ignorerMail(b) {
+  if (!confirm('Écarter ce mail ? Il n\'est pas du travail et ne sera plus affiché.')) return;
+  b.disabled = true;
+  appel('ignorerMail', { numero: numeroCourant() }).then((r) => { toast('Mail écarté' + (r.adresse ? ' · les mails de ' + r.adresse + ' seront rangés tout seuls' : '') + (r.autres ? ' (' + r.autres + ' autre' + (r.autres > 1 ? 's' : '') + ' aussi)' : '')); racine('accueil'); }).catch((e) => { b.disabled = false; echec(e); });
+}
 function definirPriorite(p) { appel('definirPriorite', { numero: numeroCourant(), priorite: p }).then(() => { toast('Priorité : ' + p); rafraichirAffaire(); }).catch(echec); }
 function enregistrerSuivi(ev) {
   ev.preventDefault();
@@ -1038,24 +1088,26 @@ ECRANS.proforma = function (p) {
     const a = d.affaire, dv = d.devis;
     if (!dv) {
       rendre(entete('Proforma', esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : ''))
-        + '<div class="section"><div class="carte"><div style="font-size:14px">Pas encore de proforma pour cette affaire. Marge nette visée 30 %, commission 10 %, impôt 10 % (modifiables ensuite).</div>'
+        + '<div class="section"><div class="carte"><div style="font-size:14px">Pas encore de proforma pour cette affaire. Tu saisis toi-même tes quantités, coûts et prix ; commission 10 % et impôt 10 % (modifiables).</div>'
         + '<button class="bouton" onclick="creerProforma()">Créer la proforma</button></div></div>', null);
       return;
     }
     const lignes = d.lignes;
     const html = entete('Proforma ' + dv.NumeroDevis.replace('DEV', 'PRO'), esc(a.Client) + (a.Site ? ' · ' + esc(a.Site) : '') + ' · ' + esc(dv.Statut))
       + '<div class="section">'
-      + '<div class="carte"><b style="font-size:13px;color:#5A6585">LIGNES : COÛT → PRIX (modifiable)</b>'
-      + (lignes.length ? lignes.map((l) => '<div class="lp"><div class="txt"><b style="white-space:normal">' + esc(l.NumeroLigne) + '. ' + esc(l.Designation) + '</b><small>' + esc(l.Quantite) + ' × coût ' + fcfa(l.CoutUnitaire) + ' · ' + (l.PrixModifieMain === true ? 'modifié à la main' : 'calculé') + '</small></div>'
-        + '<input class="' + (l.PrixModifieMain === true ? 'main' : '') + '" inputmode="numeric" aria-label="Prix unitaire ligne ' + esc(l.NumeroLigne) + '" value="' + Math.round(l.PrixUnitaire) + '" onchange="modifierPrix(' + Number(l.NumeroLigne) + ',this.value)"></div>').join('') : '<div class="vide">Ajoute la première ligne.</div>')
+      + '<div class="carte"><b style="font-size:13px;color:#5A6585">LIGNES : TES MONTANTS (tout est modifiable)</b>'
+      + (lignes.length ? lignes.map((l) => carteLigneDevis(l, dv)).join('') : '<div class="vide">Ajoute la première ligne.</div>')
       + '<details' + (lignes.length ? '' : ' open') + '><summary style="font-weight:600;color:#2563EB;min-height:44px;display:flex;align-items:center">+ Ajouter une ligne</summary>'
       + '<form onsubmit="ajouterLigne(event)" style="display:flex;flex-direction:column;gap:10px"><input id="ld" placeholder="Désignation" aria-label="Désignation" required>'
-      + '<div class="deux"><input id="lq" type="number" inputmode="decimal" value="1" min="0" step="any" aria-label="Quantité" required><input id="lc" type="number" inputmode="numeric" placeholder="Coût unitaire" aria-label="Coût unitaire" required></div>'
+      + '<div class="trois"><label class="mini">Quantité<input id="lq" type="number" inputmode="decimal" value="1" min="0" step="any" required oninput="conseilNouvelle()"></label>'
+      + '<label class="mini">Coût unitaire<input id="lc" type="number" inputmode="numeric" min="0" required oninput="conseilNouvelle()"></label>'
+      + '<label class="mini">Prix unitaire<input id="lp" type="number" inputmode="numeric" min="0" required></label></div>'
+      + '<small id="lconseil" style="color:#5A6585"></small>'
       + '<button class="bouton" type="submit">Ajouter la ligne</button></form></details></div>'
-      + '<div class="carte"><b style="font-size:13px;color:#5A6585">MARGE NETTE VISÉE (après impôt et commission)</b>'
-      + '<div class="puces">' + [25, 30, 35, 40].map((m) => '<button class="puce ' + (Number(dv.MargeVisee) === m ? 'on' : '') + '" onclick="changerTaux({marge:' + m + '})">' + m + ' %</button>').join('') + '</div>'
-      + stepper('Commission (% du marché)', 'commission', dv.TauxCommission) + stepper('Impôt (% du marché)', 'impot', dv.TauxImpot)
-      + '<button class="bouton second" onclick="changerTaux({reinitialiser:true})">Recalculer toutes les lignes</button></div>'
+      + '<div class="carte"><b style="font-size:13px;color:#5A6585">COMMISSION ET IMPÔT (% du marché)</b>'
+      + stepper('Commission', 'commission', dv.TauxCommission) + stepper('Impôt', 'impot', dv.TauxImpot)
+      + '<div style="font-size:13px;color:#5A6585">Repère de marge pour le prix conseillé (il ne change jamais tes montants) :</div>'
+      + '<div class="puces">' + [25, 30, 35, 40].map((m) => '<button class="puce ' + (Number(dv.MargeVisee) === m ? 'on' : '') + '" onclick="changerTaux({marge:' + m + '})">' + m + ' %</button>').join('') + '</div></div>'
       + resultatProforma(dv, lignes)
       + '<div class="deux"><button class="bouton second" onclick="pdfProforma()">PDF client</button><button class="bouton" onclick="envoyerProforma()">Envoyer à ' + esc(a.Client) + '</button></div>'
       + (dv.Statut !== 'Validé' ? '<button class="bouton second" onclick="validerProforma()">Marquer comme validée par le client</button>' : '')
@@ -1067,27 +1119,59 @@ function stepper(nom, cle, valeur) {
   const v = Number(valeur);
   return '<div class="ligne" style="font-size:14px"><span>' + nom + '</span><span class="stepper"><button aria-label="Baisser" onclick="changerTaux({' + cle + ':' + (v - 1) + '})">−</button><b>' + v + ' %</b><button aria-label="Augmenter" onclick="changerTaux({' + cle + ':' + (v + 1) + '})">+</button></span></div>';
 }
+/** Prix conseillé pour la marge repère (indicatif, jamais appliqué tout seul). */
+function prixConseille(cout, dv) {
+  const reste = 1 - (Number(dv.MargeVisee) + Number(dv.TauxCommission) + Number(dv.TauxImpot)) / 100;
+  return reste > 0 ? Math.round(Number(cout) / reste) : 0;
+}
+function carteLigneDevis(l, dv) {
+  const n = Number(l.NumeroLigne), q = Number(l.Quantite), c = Number(l.CoutUnitaire), p = Number(l.PrixUnitaire);
+  const tot = q * p, net = tot - q * c - tot * (Number(dv.TauxCommission) + Number(dv.TauxImpot)) / 100;
+  const marge = tot ? Math.round(net / tot * 100) : 0, conseil = prixConseille(c, dv);
+  const champ = (cle, lib, v, type) => '<label class="mini">' + lib + '<input type="' + (type || 'number') + '" inputmode="' + (cle === 'quantite' ? 'decimal' : 'numeric') + '" value="' + esc(v) + '" onchange="modifierLigne(' + n + ',\'' + cle + '\',this.value)"></label>';
+  return '<div class="ligdev"><div class="ligne"><b style="font-size:13px;color:#5A6585">LIGNE ' + n + '</b><button class="lien-suppr" onclick="supprimerLigne(' + n + ')" aria-label="Supprimer la ligne ' + n + '">Supprimer</button></div>'
+    + '<textarea rows="' + Math.min(4, Math.ceil(String(l.Designation).length / 30) || 1) + '" aria-label="Désignation ligne ' + n + '" onchange="modifierLigne(' + n + ',\'designation\',this.value)" style="font-weight:600;min-height:0;resize:vertical">' + esc(l.Designation) + '</textarea>'
+    + '<div class="trois">' + champ('quantite', 'Quantité', q) + champ('cout', 'Coût unitaire', Math.round(c)) + champ('prix', 'Prix unitaire', Math.round(p)) + '</div>'
+    + '<small style="color:#5A6585">Total <b style="color:#0F1733">' + fcfa(tot) + '</b> · marge nette <b style="color:' + (marge >= Number(dv.MargeVisee) ? '#047857' : marge >= 0 ? '#B45309' : '#B91C1C') + '">' + marge + ' %</b>'
+    + (conseil && conseil !== Math.round(p) ? ' · conseillé ' + fcfa(conseil) + ' <a href="#" onclick="modifierLigne(' + n + ',\'prix\',' + conseil + ');return false" style="color:#2563EB;font-weight:600">utiliser</a>' : '') + '</small></div>';
+}
+function conseilNouvelle() {
+  const dv = etat.affaire && etat.affaire.devis, c = Number($('lc').value);
+  $('lconseil').innerHTML = dv && c > 0 ? 'Prix conseillé pour ' + Number(dv.MargeVisee) + ' % de marge : <b>' + fcfa(prixConseille(c, dv)) + '</b> <a href="#" onclick="$(\'lp\').value=' + prixConseille(c, dv) + ';return false" style="color:#2563EB;font-weight:600">utiliser</a>' : '';
+}
 function resultatProforma(dv, lignes) {
   const cout = lignes.reduce((s, l) => s + Number(l.Quantite) * Number(l.CoutUnitaire), 0);
   const prix = lignes.reduce((s, l) => s + Number(l.Quantite) * Number(l.PrixUnitaire), 0);
   const com = prix * Number(dv.TauxCommission) / 100, imp = prix * Number(dv.TauxImpot) / 100;
   const net = prix - cout - com - imp, marge = prix ? Math.round(net / prix * 1000) / 10 : 0;
-  return '<div class="resultat"><b style="font-size:13px;color:#DDE3FF">PRIX À PROPOSER AU CLIENT</b><div class="gros">' + fcfa(prix) + '</div>'
-    + '<div class="kv"><span>Coûts</span><span>' + fcfa(cout) + '</span></div><div class="kv"><span>Commission</span><span>' + fcfa(com) + '</span></div><div class="kv"><span>Impôt</span><span>' + fcfa(imp) + '</span></div>'
+  return '<div class="resultat"><b style="font-size:13px;color:#DDE3FF">PRIX FINAL AU CLIENT (modifiable)</b>'
+    + '<div class="prixfinal"><input id="pfinal" inputmode="numeric" aria-label="Prix final au client" value="' + Math.round(prix) + '" onchange="fixerPrixFinal(this.value)" onfocus="this.select()"><span>F</span></div>'
+    + '<small style="color:#DDE3FF">Tape ton prix final : les prix des lignes s\'ajustent pour tomber pile dessus.</small>'
+    + '<div class="kv"><span>Coûts</span><span>' + fcfa(cout) + '</span></div><div class="kv"><span>Commission ' + Number(dv.TauxCommission) + ' %</span><span>' + fcfa(com) + '</span></div><div class="kv"><span>Impôt ' + Number(dv.TauxImpot) + ' %</span><span>' + fcfa(imp) + '</span></div>'
     + '<div class="kv" style="font-weight:700"><span style="color:#fff">Bénéfice net</span><span>' + fcfa(net) + '</span></div>'
-    + '<div class="kv" style="font-weight:700"><span style="color:#fff">Marge nette réelle</span><span>' + marge + ' % (visée ' + Number(dv.MargeVisee) + ' %)</span></div></div>';
+    + '<div class="kv" style="font-weight:700"><span style="color:#fff">Marge nette obtenue</span><span>' + marge + ' %</span></div></div>';
 }
 function devisCourant() { return etat.affaire.devis.NumeroDevis; }
 function rafraichirProforma() { ECRANS.proforma({ numero: numeroCourant() }); }
 function creerProforma() { appel('creerDevis', { numero: numeroCourant() }).then(() => rafraichirProforma()).catch(echec); }
 function ajouterLigne(ev) {
   ev.preventDefault();
-  appel('ajouterLigneDevis', { devis: devisCourant(), designation: $('ld').value, quantite: $('lq').value, cout: $('lc').value }).then(() => rafraichirProforma()).catch(echec);
+  appel('ajouterLigneDevis', { devis: devisCourant(), designation: $('ld').value, quantite: $('lq').value, cout: $('lc').value, prix: $('lp').value }).then(() => rafraichirProforma()).catch(echec);
 }
-function modifierPrix(ligne, valeur) {
-  const prix = parseInt(String(valeur).replace(/\D/g, ''), 10);
-  if (isNaN(prix)) return;
-  appel('modifierPrixLigne', { devis: devisCourant(), ligne, prix }).then(() => rafraichirProforma()).catch(echec);
+function fixerPrixFinal(valeur) {
+  const total = String(valeur).replace(/\D/g, '');
+  if (!total) return;
+  appel('fixerPrixTotalDevis', { devis: devisCourant(), total }).then(() => { toast('Prix final : ' + fcfa(Number(total))); rafraichirProforma(); }).catch(echec);
+}
+function modifierLigne(ligne, cle, valeur) {
+  const champs = {};
+  champs[cle] = cle === 'designation' ? String(valeur) : String(valeur).replace(/\s/g, '');
+  if (cle !== 'designation' && champs[cle] === '') return;
+  appel('modifierLigneDevis', { devis: devisCourant(), ligne, champs }).then(() => rafraichirProforma()).catch(echec);
+}
+function supprimerLigne(ligne) {
+  if (!confirm('Supprimer la ligne ' + ligne + ' ?')) return;
+  appel('supprimerLigneDevis', { devis: devisCourant(), ligne }).then(() => rafraichirProforma()).catch(echec);
 }
 function changerTaux(t) { appel('changerTauxDevis', Object.assign({ devis: devisCourant() }, t)).then(() => rafraichirProforma()).catch(echec); }
 function pdfProforma() { appel('pdfProforma', { devis: devisCourant() }).then((r) => { window.open(r.url, '_blank'); }).catch(echec); }
@@ -1217,6 +1301,129 @@ function retourMateriel(ev, i) {
   ev.preventDefault();
   const m = etat.materiel.sortiesEnCours[i];
   appel('declarerRetourMateriel', { materiel: m.Materiel, numero: m.NumeroAffaire, posee: $('rp' + i).value, rapportee: $('rr' + i).value }).then(() => { toast('Retour déclaré'); ECRANS.materiel(); }).catch(echec);
+}
+
+// ---------- Programme de la semaine (comptable, DG, DGA) ----------
+function chiffresSemaine(t) {
+  const pct = t.prevu > 0 ? Math.round(100 * t.paye / t.prevu) : 0;
+  return '<div class="chiffres"><div><b>' + fcfa(t.prevu) + '</b><span>Prévu</span></div><div><b>' + fcfa(t.paye) + '</b><span>Payé</span></div><div><b>' + fcfa(t.reste) + '</b><span>Reste à payer</span></div></div>'
+    + '<div class="jauge" role="img" aria-label="' + pct + ' % payé"><i style="width:' + pct + '%"></i></div>';
+}
+/** Carte de l'accueil : la semaine en un coup d'œil. */
+function carteSemaine(s) {
+  return '<button class="semaine" onclick="aller(\'semaine\')"><div class="orb a"></div>'
+    + '<div class="ligne"><span><span class="surtitre">Programme de la semaine</span><br><strong style="font-family:\'Plus Jakarta Sans\',Inter,sans-serif;font-size:18px">'
+    + s.missions + ' intervention' + (s.missions > 1 ? 's' : '') + (s.missions ? ' · ' + s.faites + ' faite' + (s.faites > 1 ? 's' : '') : '') + '</strong></span>'
+    + (s.urgences ? '<span class="pastille p-elevee">' + s.urgences + ' urgence' + (s.urgences > 1 ? 's' : '') + '</span>' : '<span class="rond">' + svg('droite', 18, '#fff', 2.4) + '</span>') + '</div>'
+    + chiffresSemaine(s) + '</button>';
+}
+function lundiLocal(iso, decalage) {
+  const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 7 * decalage); return d.toISOString().slice(0, 10);
+}
+function texteSemaine(debut, fin) {
+  const f = (x) => new Date(x + 'T00:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+  return 'du ' + f(debut) + ' au ' + f(fin);
+}
+ECRANS.semaine = function (p) {
+  appel('ecranSemaine', { debut: p.debut || '' }).then((d) => {
+    etat.semaine = d;
+    const t = d.totaux, courante = d.debut === d.cetteSemaine;
+    const auj = new Date().toISOString().slice(0, 10);
+    rendre('<div class="hero court"><div class="orb a"></div><div class="orb b"></div>'
+      + '<div class="surtitre">' + (courante ? 'Cette semaine' : 'Semaine') + '</div><h1>Programme ' + esc(texteSemaine(d.debut, d.fin)) + '</h1>'
+      + '<div class="semnav"><button onclick="aller(\'semaine\',{debut:\'' + lundiLocal(d.debut, -1) + '\'},true)" aria-label="Semaine précédente">' + svg('gauche', 16, '#fff', 2.4) + 'Précédente</button>'
+      + (courante ? '' : '<button onclick="aller(\'semaine\',{},true)">Cette semaine</button>')
+      + '<button onclick="aller(\'semaine\',{debut:\'' + lundiLocal(d.debut, 1) + '\'},true)" aria-label="Semaine suivante">Suivante' + svg('droite', 16, '#fff', 2.4) + '</button></div></div>'
+      + '<div class="section">'
+      + '<div class="semaine" style="cursor:default"><div class="ligne"><span><span class="surtitre">Sorties d\'argent</span><br><strong style="font-size:15px">'
+      + t.missions + ' intervention' + (t.missions > 1 ? 's' : '') + ' · ' + t.faites + ' faite' + (t.faites > 1 ? 's' : '') + (t.urgencesSemaine ? ' · ' + t.urgencesSemaine + ' urgence' + (t.urgencesSemaine > 1 ? 's' : '') : '') + '</strong></span></div>'
+      + chiffresSemaine(t) + '</div>'
+      + d.jours.map((j) => '<div class="jourtitre' + (j.date === auj ? ' auj' : '') + '">' + svg('calendrier', 18, j.date === auj ? '#6D28D9' : '#5A6585', 2.2) + esc(j.libelle) + (j.date === auj ? ' <small>aujourd\'hui</small>' : '') + (j.missions.length ? ' <small>· ' + j.missions.length + '</small>' : '') + '</div>'
+        + (j.missions.length ? j.missions.map(carteMissionSemaine).join('') : '<div class="vide" style="padding:6px">Rien de programmé.</div>')).join('')
+      + '<div class="carte" style="font-size:13px;color:#5A6585">Les montants « conseillés » viennent du coût de la proforma. Corrige-les à la main, ajoute les lignes qu\'il faut (ampoules, location…), puis touche « Payé » : le paiement est noté comme dépense de l\'affaire. Le résumé part aussi par mail le lundi matin.</div>'
+      + '</div>', null);
+  }).catch(echec);
+};
+function carteMissionSemaine(m) {
+  const i = etat.semaine.jours.reduce((t, j) => t.concat(j.missions), []).indexOf(m);
+  const acc = (m.accessoires || []).map((l) => esc(l.designation) + (l.quantite ? ' ×' + l.quantite : '')).join(', ');
+  const stock = (m.sortiesStock || []).map((l) => esc(l.materiel) + ' ×' + l.quantite).join(', ');
+  return '<div class="mission' + (m.faite ? ' faite' : (m.urgence ? ' urg' : '')) + '">'
+    + '<div class="ligne" style="align-items:flex-start"><span style="min-width:0"><small style="color:#5A6585;font-weight:700">' + (m.heure ? esc(m.heure) + ' · ' : '') + esc(m.type || '') + '</small>'
+    + '<h3>' + esc(m.client) + (m.site ? ' · ' + esc(m.site) : '') + '</h3><small style="color:#3E4A6B">' + esc(m.titre) + '</small></span>'
+    + (m.faite ? '<span class="pastille p-ok">Faite</span>' : (m.urgence ? '<span class="pastille p-elevee">Urgence</span>' : '')) + '</div>'
+    + '<div class="info">' + svg('liste', 16, '#5A6585') + '<span><b>Équipe :</b> ' + esc(m.equipe || m.groupe || 'à désigner') + '</span></div>'
+    + '<div class="info">' + svg('auto', 16, '#5A6585') + '<span>' + (m.vehicules.length ? '<b>Véhicule :</b> ' + esc(m.vehicules.join(', ')) : '<b>Véhicule :</b> aucun noté ce jour, transport à prévoir') + '</span></div>'
+    + '<div class="info">' + svg('boite', 16, '#5A6585') + '<span><b>Accessoires :</b> ' + (acc ? acc + (m.devis ? ' <small>(proforma ' + esc(m.devis) + ')</small>' : '') : 'pas de proforma') + (stock ? '<br><b>Sortis du stock :</b> ' + stock : '') + '</span></div>'
+    + (m.depensesDeja ? '<div class="info" style="color:#B45309">' + svg('argent', 16, '#B45309') + '<span>Déjà ' + fcfa(m.depensesDeja) + ' de dépenses notées sur cette affaire.</span></div>' : '')
+    + m.postes.map((p, k) => lignePoste(m, p, i, k)).join('')
+    + '<div id="fp' + i + '"></div>'
+    + '<div id="fl' + i + '"><button class="lien" style="text-align:left" onclick="ouvrirLigneFrais(' + i + ')">+ Ajouter une ligne (ampoules, location, autre…)</button></div>'
+    + (m.notes || []).map((n) => '<div class="note">' + esc(n.texte) + '<small>' + esc(n.par) + ' · ' + esc(depuis(n.date)) + '</small></div>').join('')
+    + '<div style="display:flex;gap:8px"><input id="nt' + i + '" placeholder="Ajouter une note…" style="min-height:44px"><button class="puce" onclick="noterMission(' + i + ')">Noter</button></div>'
+    + '<button class="lien" style="text-align:left" onclick="aller(\'affaire\',{numero:\'' + esc(m.numero) + '\'})">Ouvrir l\'affaire ' + esc(m.numero) + ' ›</button>'
+    + '</div>';
+}
+function lignePoste(m, p, i, k) {
+  if (p.paye) {
+    return '<div class="poste paye"><span class="nom">' + esc(p.poste) + '<small>Payé à ' + esc(p.payeA) + ' le ' + esc(dateCourte(p.payeLe)) + '</small></span><b>' + fcfa(p.montantPaye) + '</b>'
+      + '<button class="lien-suppr" onclick="annulerPaiement(' + i + ',' + k + ')">Annuler</button></div>';
+  }
+  return '<div class="poste"><span class="nom">' + esc(p.poste) + '<small>' + (p.saisi ? 'montant saisi' : (p.conseil ? 'conseillé (proforma)' : 'à saisir'))
+    + (p.ajoute ? ' · <a href="#" style="color:#B91C1C" onclick="supprimerLigneFrais(' + i + ',' + k + ');return false">retirer</a>' : '') + '</small></span>'
+    + '<input id="mt' + i + '_' + k + '" inputmode="numeric" aria-label="' + esc(p.poste) + ' prévu" value="' + (p.montant || '') + '" placeholder="0" onchange="fixerFrais(' + i + ',' + k + ',this.value)">'
+    + '<button class="payer" onclick="ouvrirPaiement(' + i + ',' + k + ')">Payé</button></div>';
+}
+function missionSemaine(i) { return etat.semaine.jours.reduce((t, j) => t.concat(j.missions), [])[i]; }
+function rechargerSemaine(msg) { if (msg) toast(msg); ECRANS.semaine({ debut: etat.semaine.debut }); }
+function fixerFrais(i, k, v) {
+  const m = missionSemaine(i);
+  appel('fixerFrais', { numero: m.numero, poste: m.postes[k].poste, montant: String(v).replace(/[^\d]/g, '') }).then(() => rechargerSemaine('Montant enregistré')).catch(echec);
+}
+function ouvrirPaiement(i, k) {
+  const m = missionSemaine(i), p = m.postes[k];
+  const saisi = $('mt' + i + '_' + k).value.replace(/[^\d]/g, '');
+  $('fp' + i).innerHTML = '<form class="formpaie" onsubmit="payerFrais(event,' + i + ',' + k + ')"><b class="large" style="font-size:13px;color:#047857">' + esc(p.poste).toUpperCase() + ' PAYÉ</b>'
+    + '<div class="champ large"><label for="pa' + i + '">À qui</label><input id="pa' + i + '" value="' + esc(String(m.equipe || '').split(',')[0].trim()) + '" required></div>'
+    + '<div class="champ"><label for="pm' + i + '">Montant (F)</label><input id="pm' + i + '" inputmode="numeric" value="' + esc(saisi || p.montant || '') + '" required></div>'
+    + '<div class="champ"><label for="pd' + i + '">Date</label><input id="pd' + i + '" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></div>'
+    + '<button class="bouton large" type="submit">Confirmer le paiement</button></form>';
+  $('pa' + i).focus();
+}
+function payerFrais(ev, i, k) {
+  ev.preventDefault();
+  const m = missionSemaine(i);
+  appel('payerFrais', { numero: m.numero, poste: m.postes[k].poste, paiement: { a: $('pa' + i).value, montant: $('pm' + i).value.replace(/[^\d]/g, ''), date: $('pd' + i).value } })
+    .then(() => rechargerSemaine(m.postes[k].poste + ' payé')).catch(echec);
+}
+const LIBELLES_FRAIS = ['Ampoules', 'Câbles', 'Gaz réfrigérant', 'Carburant groupe', 'Location', 'Main d\'œuvre extérieure', 'Restauration'];
+function ouvrirLigneFrais(i) {
+  $('fl' + i).innerHTML = '<form class="formpaie" style="background:#EEF2FF" onsubmit="ajouterLigneFrais(event,' + i + ')"><b class="large" style="font-size:13px;color:#4338CA">NOUVELLE LIGNE</b>'
+    + '<div class="champ large"><label for="ll' + i + '">Libellé</label><input id="ll' + i + '" list="libfrais" maxlength="60" placeholder="Ex. Ampoules" required></div>'
+    + '<datalist id="libfrais">' + LIBELLES_FRAIS.map((l) => '<option value="' + esc(l) + '">').join('') + '</datalist>'
+    + '<div class="champ large"><label for="lm' + i + '">Montant prévu (F)</label><input id="lm' + i + '" inputmode="numeric" placeholder="0"></div>'
+    + '<button class="bouton second" type="button" onclick="rechargerSemaine()">Annuler</button><button class="bouton" type="submit">Ajouter</button></form>';
+  $('ll' + i).focus();
+}
+function ajouterLigneFrais(ev, i) {
+  ev.preventDefault();
+  const m = missionSemaine(i);
+  appel('ajouterLigneFrais', { numero: m.numero, libelle: $('ll' + i).value, montant: $('lm' + i).value.replace(/[^\d]/g, '') }).then((l) => rechargerSemaine('Ligne « ' + l + ' » ajoutée')).catch(echec);
+}
+function supprimerLigneFrais(i, k) {
+  const m = missionSemaine(i);
+  if (!confirm('Retirer la ligne « ' + m.postes[k].poste + ' » ?')) return;
+  appel('supprimerLigneFrais', { numero: m.numero, poste: m.postes[k].poste }).then(() => rechargerSemaine('Ligne retirée')).catch(echec);
+}
+function annulerPaiement(i, k) {
+  const m = missionSemaine(i);
+  if (!confirm('Annuler ce paiement ? La dépense liée sera retirée.')) return;
+  appel('annulerPaiementFrais', { numero: m.numero, poste: m.postes[k].poste }).then(() => rechargerSemaine('Paiement annulé')).catch(echec);
+}
+function noterMission(i) {
+  const m = missionSemaine(i), texte = $('nt' + i).value.trim();
+  if (!texte) return;
+  appel('noterMissionCompta', { numero: m.numero, texte }).then(() => rechargerSemaine('Note ajoutée')).catch(echec);
 }
 
 // ---------- Argent ----------

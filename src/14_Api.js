@@ -25,6 +25,7 @@ const ACTIONS_API = {
   // Affaires
   creerDemande: (a) => creerDemande(a),
   definirPriorite: (a) => definirPrioriteAffaire(a.numero, a.priorite),
+  ignorerMail: (a) => ignorerMailAffaire(a.numero),
   definirType: (a) => definirTypeAffaire(a.numero, a.type),
   cloturerContrat: (a) => cloturerAffaireContrat(a.numero),
   envoyerMessage: (a) => envoyerMessageClient(a.numero, a.message),
@@ -40,9 +41,12 @@ const ACTIONS_API = {
   enregistrerDepense: (a) => enregistrerDepense(a.numero, a.categorie, a.montant, a.description),
   // Proforma
   creerDevis: (a) => creerDevis(a.numero, 0, a.marge, a.commission, a.impot),
-  ajouterLigneDevis: (a) => ajouterLigneDevis(a.devis, a.designation, a.quantite, a.cout),
+  ajouterLigneDevis: (a) => ajouterLigneDevis(a.devis, a.designation, a.quantite, a.cout, a.prix),
   modifierPrixLigne: (a) => modifierPrixLigne(a.devis, a.ligne, a.prix),
-  changerTauxDevis: (a) => changerTauxDevis(a.devis, a.marge, a.commission, a.impot, a.reinitialiser),
+  modifierLigneDevis: (a) => modifierLigneDevis(a.devis, a.ligne, a.champs),
+  supprimerLigneDevis: (a) => supprimerLigneDevis(a.devis, a.ligne),
+  fixerPrixTotalDevis: (a) => fixerPrixTotalDevis(a.devis, a.total),
+  changerTauxDevis: (a) => changerTauxDevis(a.devis, a.marge, a.commission, a.impot),
   validerDevis: (a) => validerDevis(a.devis),
   pdfProforma: (a) => pdfProforma(a.devis),
   envoyerProforma: (a) => envoyerProforma(a.devis),
@@ -87,6 +91,14 @@ const ACTIONS_API = {
   mouvementsOutils: (a) => mouvementsOutils(a.prendre, a.rendre, a.lieu),
   sortirMateriels: (a) => sortirMateriels(a.numero, a.lignes),
   declarerRetourMateriel: (a) => declarerRetourMateriel(a.materiel, a.numero, a.posee, a.rapportee),
+  // Programme de la semaine (comptable, DG, DGA)
+  ecranSemaine: (a) => ecranSemaine(a.debut),
+  fixerFrais: (a) => fixerFraisMission(a.numero, a.poste, a.montant),
+  payerFrais: (a) => payerFraisMission(a.numero, a.poste, a.paiement),
+  ajouterLigneFrais: (a) => ajouterLigneFrais(a.numero, a.libelle, a.montant),
+  supprimerLigneFrais: (a) => supprimerLigneFrais(a.numero, a.poste),
+  annulerPaiementFrais: (a) => annulerPaiementFrais(a.numero, a.poste),
+  noterMissionCompta: (a) => noterMissionCompta(a.numero, a.texte),
   // Compte
   changerMonCode: (a) => definirCodeAcces(getEmailUtilisateurCourant(), a.code),
 };
@@ -139,6 +151,8 @@ function ecranAccueil() {
     rapportsARelire: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) !== -1 ? rapportsARelire() : [],
     // Missions de la personne (pas pour le DG et le DGA, qui voient tout ailleurs).
     mesMissions: [ROLES.DG, ROLES.DGA].indexOf(utilisateur.role) === -1 ? missionsDe(utilisateur) : [],
+    // Programme de la semaine en résumé (DG, DGA, comptable).
+    semaine: ROLES_SEMAINE.indexOf(utilisateur.role) !== -1 ? resumeSemaine() : null,
   };
 }
 
@@ -197,6 +211,7 @@ function ecranAffaire(numero) {
     modelesMessage: MODELES_MESSAGE,
     sujetMessage: sujetParDefaut(affaire),
     historique: historiqueSite(affaire.Client, affaire.Site),
+    peutIgnorerMail: affaire.Source === SOURCES_DEMANDE.MAIL && affaire.Statut === STATUTS_AFFAIRE.NOUVELLE_DEMANDE && peutPlanifierAffaire(utilisateur),
     peutCloturer: utilisateur.role === ROLES.DG || utilisateur.role === ROLES.DGA || aLeDroit(utilisateur, DROITS.PLANNING),
   };
 }
