@@ -227,3 +227,13 @@ etape('résumé le lundi', () => envoyerResumeSemaineSiLundi(new Date(lundiTest 
 etape('une seule fois par semaine', () => envoyerResumeSemaineSiLundi(new Date(lundiTest + 'T07:30:00Z')));
 etape('mail du lundi', () => { const m = H.MAILS.slice(nms); if (m.length !== 1) throw new Error(m.length + ' mails'); return m[0].to + ' | ' + m[0].subject; });
 console.log(H.MAILS[nms].body);
+// Lignes de frais libres (17/11)
+etape('ajouter ligne Ampoules', () => api(sc, 'ajouterLigneFrais', { numero: n8, libelle: 'ampoules', montant: '3000' }));
+etape('doublon refusé', () => { try { api(sc, 'ajouterLigneFrais', { numero: n8, libelle: 'Ampoules', montant: 1 }); return 'PAS ÉCHOUÉ'; } catch (e) { return e.message; } });
+etape('ligne visible et totaux', () => { const s = api(sc, 'ecranSemaine', {}); const m = s.jours.reduce((t, j) => t.concat(j.missions), []).filter((x) => x.numero === n8)[0]; return [m.postes.map((p) => p.poste + ' ' + p.montant + (p.ajoute ? ' +' : '')), s.totaux.reste]; });
+etape('payer la ligne → dépense Autre', () => { api(sc, 'payerFrais', { numero: n8, poste: 'Ampoules', paiement: { a: 'Quincaillerie', montant: 3000 } }); return api(J, 'ecranAffaire', { numero: n8 }).depenses.map((d) => d.Categorie + ' ' + d.Montant); });
+etape('retirer une ligne payée (doit échouer)', () => { try { api(sc, 'supprimerLigneFrais', { numero: n8, poste: 'Ampoules' }); return 'PAS ÉCHOUÉ'; } catch (e) { return e.message; } });
+etape('retirer Transport (doit échouer)', () => { try { api(sc, 'supprimerLigneFrais', { numero: n8, poste: 'Transport' }); return 'PAS ÉCHOUÉ'; } catch (e) { return e.message; } });
+etape('retirer une ligne non payée', () => { api(sc, 'ajouterLigneFrais', { numero: n8, libelle: 'Location échelle', montant: 2000 }); api(sc, 'supprimerLigneFrais', { numero: n8, poste: 'Location échelle' }); return api(sc, 'ecranSemaine', {}).jours.reduce((t, j) => t.concat(j.missions), []).filter((x) => x.numero === n8)[0].postes.map((p) => p.poste); });
+// Le script de l'interface doit rester du JavaScript valide (une apostrophe oubliée casse toute l'appli).
+etape('syntaxe de Index.html', () => { const h = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'Index.html'), 'utf8'); new Function(h.slice(h.indexOf('<script>') + 8, h.lastIndexOf('</script>'))); return 'ok'; });

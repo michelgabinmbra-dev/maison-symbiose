@@ -1340,7 +1340,7 @@ ECRANS.semaine = function (p) {
       + chiffresSemaine(t) + '</div>'
       + d.jours.map((j) => '<div class="jourtitre' + (j.date === auj ? ' auj' : '') + '">' + svg('calendrier', 18, j.date === auj ? '#6D28D9' : '#5A6585', 2.2) + esc(j.libelle) + (j.date === auj ? ' <small>aujourd\'hui</small>' : '') + (j.missions.length ? ' <small>· ' + j.missions.length + '</small>' : '') + '</div>'
         + (j.missions.length ? j.missions.map(carteMissionSemaine).join('') : '<div class="vide" style="padding:6px">Rien de programmé.</div>')).join('')
-      + '<div class="carte" style="font-size:13px;color:#5A6585">Les montants « conseillés » viennent du coût de la proforma. Corrige-les à la main, puis touche « Payé » : le paiement est noté comme dépense de l\'affaire. Le résumé part aussi par mail le lundi matin.</div>'
+      + '<div class="carte" style="font-size:13px;color:#5A6585">Les montants « conseillés » viennent du coût de la proforma. Corrige-les à la main, ajoute les lignes qu\'il faut (ampoules, location…), puis touche « Payé » : le paiement est noté comme dépense de l\'affaire. Le résumé part aussi par mail le lundi matin.</div>'
       + '</div>', null);
   }).catch(echec);
 };
@@ -1358,6 +1358,7 @@ function carteMissionSemaine(m) {
     + (m.depensesDeja ? '<div class="info" style="color:#B45309">' + svg('argent', 16, '#B45309') + '<span>Déjà ' + fcfa(m.depensesDeja) + ' de dépenses notées sur cette affaire.</span></div>' : '')
     + m.postes.map((p, k) => lignePoste(m, p, i, k)).join('')
     + '<div id="fp' + i + '"></div>'
+    + '<div id="fl' + i + '"><button class="lien" style="text-align:left" onclick="ouvrirLigneFrais(' + i + ')">+ Ajouter une ligne (ampoules, location, autre…)</button></div>'
     + (m.notes || []).map((n) => '<div class="note">' + esc(n.texte) + '<small>' + esc(n.par) + ' · ' + esc(depuis(n.date)) + '</small></div>').join('')
     + '<div style="display:flex;gap:8px"><input id="nt' + i + '" placeholder="Ajouter une note…" style="min-height:44px"><button class="puce" onclick="noterMission(' + i + ')">Noter</button></div>'
     + '<button class="lien" style="text-align:left" onclick="aller(\'affaire\',{numero:\'' + esc(m.numero) + '\'})">Ouvrir l\'affaire ' + esc(m.numero) + ' ›</button>'
@@ -1368,7 +1369,8 @@ function lignePoste(m, p, i, k) {
     return '<div class="poste paye"><span class="nom">' + esc(p.poste) + '<small>Payé à ' + esc(p.payeA) + ' le ' + esc(dateCourte(p.payeLe)) + '</small></span><b>' + fcfa(p.montantPaye) + '</b>'
       + '<button class="lien-suppr" onclick="annulerPaiement(' + i + ',' + k + ')">Annuler</button></div>';
   }
-  return '<div class="poste"><span class="nom">' + esc(p.poste) + '<small>' + (p.saisi ? 'montant saisi' : (p.conseil ? 'conseillé (proforma)' : 'à saisir')) + '</small></span>'
+  return '<div class="poste"><span class="nom">' + esc(p.poste) + '<small>' + (p.saisi ? 'montant saisi' : (p.conseil ? 'conseillé (proforma)' : 'à saisir'))
+    + (p.ajoute ? ' · <a href="#" style="color:#B91C1C" onclick="supprimerLigneFrais(' + i + ',' + k + ');return false">retirer</a>' : '') + '</small></span>'
     + '<input id="mt' + i + '_' + k + '" inputmode="numeric" aria-label="' + esc(p.poste) + ' prévu" value="' + (p.montant || '') + '" placeholder="0" onchange="fixerFrais(' + i + ',' + k + ',this.value)">'
     + '<button class="payer" onclick="ouvrirPaiement(' + i + ',' + k + ')">Payé</button></div>';
 }
@@ -1393,6 +1395,25 @@ function payerFrais(ev, i, k) {
   const m = missionSemaine(i);
   appel('payerFrais', { numero: m.numero, poste: m.postes[k].poste, paiement: { a: $('pa' + i).value, montant: $('pm' + i).value.replace(/[^\d]/g, ''), date: $('pd' + i).value } })
     .then(() => rechargerSemaine(m.postes[k].poste + ' payé')).catch(echec);
+}
+const LIBELLES_FRAIS = ['Ampoules', 'Câbles', 'Gaz réfrigérant', 'Carburant groupe', 'Location', 'Main d\'œuvre extérieure', 'Restauration'];
+function ouvrirLigneFrais(i) {
+  $('fl' + i).innerHTML = '<form class="formpaie" style="background:#EEF2FF" onsubmit="ajouterLigneFrais(event,' + i + ')"><b class="large" style="font-size:13px;color:#4338CA">NOUVELLE LIGNE</b>'
+    + '<div class="champ large"><label for="ll' + i + '">Libellé</label><input id="ll' + i + '" list="libfrais" maxlength="60" placeholder="Ex. Ampoules" required></div>'
+    + '<datalist id="libfrais">' + LIBELLES_FRAIS.map((l) => '<option value="' + esc(l) + '">').join('') + '</datalist>'
+    + '<div class="champ large"><label for="lm' + i + '">Montant prévu (F)</label><input id="lm' + i + '" inputmode="numeric" placeholder="0"></div>'
+    + '<button class="bouton second" type="button" onclick="rechargerSemaine()">Annuler</button><button class="bouton" type="submit">Ajouter</button></form>';
+  $('ll' + i).focus();
+}
+function ajouterLigneFrais(ev, i) {
+  ev.preventDefault();
+  const m = missionSemaine(i);
+  appel('ajouterLigneFrais', { numero: m.numero, libelle: $('ll' + i).value, montant: $('lm' + i).value.replace(/[^\d]/g, '') }).then((l) => rechargerSemaine('Ligne « ' + l + ' » ajoutée')).catch(echec);
+}
+function supprimerLigneFrais(i, k) {
+  const m = missionSemaine(i);
+  if (!confirm('Retirer la ligne « ' + m.postes[k].poste + ' » ?')) return;
+  appel('supprimerLigneFrais', { numero: m.numero, poste: m.postes[k].poste }).then(() => rechargerSemaine('Ligne retirée')).catch(echec);
 }
 function annulerPaiement(i, k) {
   const m = missionSemaine(i);

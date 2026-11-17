@@ -13,7 +13,8 @@
 const ENTETES_FRAIS = ['NumeroAffaire', 'Poste', 'Montant', 'Statut', 'PayeLe', 'PayeA', 'MontantPaye', 'PayePar', 'NumeroDepense', 'DateMaj'];
 const NOM_FEUILLE_FRAIS = 'Frais_Mission';
 const POSTES_FRAIS = { TRANSPORT: 'Transport', ACCESSOIRES: 'Accessoires' };
-const CATEGORIE_POSTE = { Transport: 'Transport / carburant', Accessoires: 'Matériel' };
+const CATEGORIE_POSTE = { Transport: 'Transport / carburant', Accessoires: 'Matériel' }; // autres libellés : « Autre »
+const POSTES_DEFAUT = [POSTES_FRAIS.TRANSPORT, POSTES_FRAIS.ACCESSOIRES];
 const ROLES_SEMAINE = [ROLES.DG, ROLES.DGA, ROLES.COMPTABILITE];
 const NOTE_COMPTA = 'Note compta';
 
@@ -80,12 +81,14 @@ function calculerSemaine(debut) {
       .map((p) => p.Immatriculation).filter((x, i, t) => t.indexOf(x) === i);
     const acc = accessoiresProforma(a.NumeroAffaire, devis, lignesDevis);
     const conseil = { Transport: 0, Accessoires: acc.cout };
-    const postes = [POSTES_FRAIS.TRANSPORT, POSTES_FRAIS.ACCESSOIRES].map((poste) => {
+    // Transport et Accessoires toujours là, puis les lignes ajoutées à la main (ex. « Ampoules », « Location échelle »).
+    const ajoutes = frais.filter((x) => x.NumeroAffaire === a.NumeroAffaire && POSTES_DEFAUT.indexOf(x.Poste) === -1).map((x) => String(x.Poste));
+    const postes = POSTES_DEFAUT.concat(ajoutes).map((poste) => {
       const f = frais.filter((x) => x.NumeroAffaire === a.NumeroAffaire && x.Poste === poste)[0];
       const saisi = f && f.Montant !== '' && f.Montant != null;
       const paye = !!f && f.Statut === 'Payé';
       return {
-        poste, montant: saisi ? Number(f.Montant) : conseil[poste], saisi, conseil: conseil[poste], paye,
+        poste, ajoute: POSTES_DEFAUT.indexOf(poste) === -1, montant: saisi ? Number(f.Montant) : (conseil[poste] || 0), saisi, conseil: conseil[poste] || 0, paye,
         payeLe: paye ? iso(f.PayeLe) : '', payeA: paye ? String(f.PayeA || '') : '', montantPaye: paye ? Number(f.MontantPaye) || 0 : 0,
       };
     });
@@ -150,7 +153,31 @@ function ligneFrais(numeroAffaire, poste, creer) {
 }
 
 function verifierPoste(poste) {
-  if ([POSTES_FRAIS.TRANSPORT, POSTES_FRAIS.ACCESSOIRES].indexOf(poste) === -1) throw new Error('Poste inconnu : ' + poste);
+  if (!String(poste || '').trim()) throw new Error('Donne un libellé à la ligne.');
+  if (String(poste).length > 60) throw new Error('Libellé trop long (60 caractères au plus).');
+}
+
+/** Ajoute une ligne de frais libre (libellé + montant) à une mission. */
+function ajouterLigneFrais(numeroAffaire, libelle, montant) {
+  exigerRole(ROLES_SEMAINE);
+  libelle = String(libelle || '').trim().replace(/\s+/g, ' ');
+  verifierPoste(libelle);
+  libelle = libelle.charAt(0).toUpperCase() + libelle.slice(1);
+  if (ligneFrais(numeroAffaire, libelle, false) || POSTES_DEFAUT.some((p) => p.toLowerCase() === libelle.toLowerCase())) {
+    throw new Error('La ligne « ' + libelle + ' » existe déjà sur cette mission.');
+  }
+  fixerFraisMission(numeroAffaire, libelle, montant);
+  return libelle;
+}
+
+/** Retire une ligne ajoutée à la main (pas Transport ni Accessoires, et pas déjà payée). */
+function supprimerLigneFrais(numeroAffaire, poste) {
+  exigerRole(ROLES_SEMAINE);
+  if (POSTES_DEFAUT.indexOf(poste) !== -1) throw new Error('Transport et Accessoires restent : mets 0 si rien n\'est prévu.');
+  const x = ligneFrais(numeroAffaire, poste, false);
+  if (!x) return;
+  if (x.r.ligne[x.r.entetes.indexOf('Statut')] === 'Payé') throw new Error('Déjà payé : annule d\'abord le paiement.');
+  x.feuille.deleteRow(x.r.index);
 }
 
 /** Montant prévu d'un poste, corrigé à la main. Vide = revenir au montant conseillé. */
@@ -183,7 +210,7 @@ function payerFraisMission(numeroAffaire, poste, p) {
   const x = ligneFrais(numeroAffaire, poste, true);
   if (x.r.ligne[x.r.entetes.indexOf('Statut')] === 'Payé') throw new Error('Ce ' + poste.toLowerCase() + ' est déjà marqué payé.');
   const montant = Math.round(Number(p.montant));
-  const dep = enregistrerDepense(numeroAffaire, CATEGORIE_POSTE[poste], montant,
+  const dep = enregistrerDepense(numeroAffaire, CATEGORIE_POSTE[poste] || CATEGORIES_DEPENSE.AUTRE, montant,
     poste + ' payé à ' + a + ' · ' + affaire.Client + (affaire.Site ? ' · ' + affaire.Site : ''), date);
   [['Statut', 'Payé'], ['PayeLe', date], ['PayeA', a], ['MontantPaye', montant], ['PayePar', u.nom], ['NumeroDepense', dep], ['DateMaj', new Date()]]
     .forEach((c) => majCellule(x.feuille, x.r, c[0], c[1]));

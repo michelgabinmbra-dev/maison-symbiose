@@ -95,6 +95,8 @@ const ACTIONS_API = {
   ecranSemaine: (a) => ecranSemaine(a.debut),
   fixerFrais: (a) => fixerFraisMission(a.numero, a.poste, a.montant),
   payerFrais: (a) => payerFraisMission(a.numero, a.poste, a.paiement),
+  ajouterLigneFrais: (a) => ajouterLigneFrais(a.numero, a.libelle, a.montant),
+  supprimerLigneFrais: (a) => supprimerLigneFrais(a.numero, a.poste),
   annulerPaiementFrais: (a) => annulerPaiementFrais(a.numero, a.poste),
   noterMissionCompta: (a) => noterMissionCompta(a.numero, a.texte),
   // Compte
